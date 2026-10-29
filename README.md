@@ -72,6 +72,16 @@ VF_SIGN_IDENTITY="Developer ID Application: <Name> (<TEAMID>)" VF_NOTARY_PROFILE
 
 Signiert wird *nach* dem Setzen der Electron-Fuses; Berechtigungen in `build/entitlements.plist` (JIT, Apple Events fürs Tippen).
 
+### Release per GitHub Actions
+
+Tag pushen → [`release.yml`](.github/workflows/release.yml) baut auf macOS, testet, signiert, notarisiert und hängt `Vaultfill-vX.Y.Z-macos-arm64.zip` + `SHA256SUMS.txt` an ein GitHub-Release:
+
+```bash
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+Benötigte Repository-Secrets stehen im Kopf der Workflow-Datei (Zertifikat als `.p12`, App-Store-Connect-API-Key für die Notarisierung).
+
 - **Erstes Tippen:** macOS fragt nach **Bedienungshilfen** (und einmalig „System Events steuern“) für Vaultfill.
 - **Immer verfügbar:** Einstellungen → *Beim Anmelden starten*.
 - Entwicklung: `npm start`.

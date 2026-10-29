@@ -1,0 +1,77 @@
+# Push a tag like v1.2.3 → build, test, sign (Developer ID), notarize, attach the zip to a GitHub release.
+# Repository secrets (Settings → Secrets and variables → Actions):
+#   MACOS_CERT_P12        base64 of the exported "Developer ID Application" certificate + private key (.p12)
+#   MACOS_CERT_PASSWORD   password of that .p12
+#   MACOS_SIGN_IDENTITY   e.g. "Developer ID Application: Jane Doe (TEAMID1234)"
+#   NOTARY_KEY_P8         contents of the App Store Connect API key (AuthKey_XXXX.p8, role "Developer")
+#   NOTARY_KEY_ID         its key id
+#   NOTARY_ISSUER         issuer id (App Store Connect → Users and Access → Integrations)
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write # create the release
+
+jobs:
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install and test
+        run: |
+          npm ci
+          npm test
+          npm version --no-git-tag-version --allow-same-version "${GITHUB_REF_NAME#v}"
+
+      - name: Import signing certificate into a throwaway keychain
+        env:
+          CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          KC="$RUNNER_TEMP/signing.keychain-db"
+          KC_PASS="$(openssl rand -hex 24)"
+          security create-keychain -p "$KC_PASS" "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p "$KC_PASS" "$KC"
+          echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KC_PASS" "$KC" > /dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+
+      - name: Build, sign, notarize
+        env:
+          VF_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+          NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
+          VF_NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          VF_NOTARY_ISSUER: ${{ secrets.NOTARY_ISSUER }}
+        run: |
+          export VF_NOTARY_KEY="$RUNNER_TEMP/AuthKey.p8"
+          printf '%s' "$NOTARY_KEY_P8" > "$VF_NOTARY_KEY"
+          npm run pack
+          rm -f "$VF_NOTARY_KEY"
+          spctl --assess --type execute --verbose dist/Vaultfill-darwin-arm64/Vaultfill.app
+          cd dist
+          mv Vaultfill-darwin-arm64.zip "Vaultfill-${GITHUB_REF_NAME}-macos-arm64.zip"
+          shasum -a 256 "Vaultfill-${GITHUB_REF_NAME}-macos-arm64.zip" | tee SHA256SUMS.txt
+
+      - name: Attach to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "dist/Vaultfill-${GITHUB_REF_NAME}-macos-arm64.zip" dist/SHA256SUMS.txt \
+            --title "Vaultfill ${GITHUB_REF_NAME}" --generate-notes
+
+      - name: Remove keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true

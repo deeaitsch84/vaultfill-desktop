@@ -2,6 +2,7 @@
 //   default:                ad-hoc signature (local use)
 //   VF_SIGN_IDENTITY="Developer ID Application: Name (TEAMID)"  → hardened runtime signature
 //   + VF_NOTARY_PROFILE=<notarytool keychain profile>           → notarize, staple, zip for distribution
+//   + or VF_NOTARY_KEY=<AuthKey.p8 path>, VF_NOTARY_KEY_ID, VF_NOTARY_ISSUER (App Store Connect API key, for CI)
 const { flipFuses, FuseVersion, FuseV1Options } = require('@electron/fuses');
 const { sign } = require('@electron/osx-sign');
 const { notarize } = require('@electron/notarize');
@@ -10,7 +11,9 @@ const { join } = require('node:path');
 
 const app = process.argv[2] || 'dist/Vaultfill-darwin-arm64/Vaultfill.app';
 const identity = process.env.VF_SIGN_IDENTITY;
-const profile = process.env.VF_NOTARY_PROFILE;
+const { VF_NOTARY_PROFILE: profile, VF_NOTARY_KEY: apiKey, VF_NOTARY_KEY_ID: apiKeyId, VF_NOTARY_ISSUER: apiIssuer } = process.env;
+const notaryAuth = profile ? { keychainProfile: profile }
+  : apiKey ? { appleApiKey: apiKey, appleApiKeyId: apiKeyId, appleApiIssuer: apiIssuer } : null;
 
 (async () => {
   // fuses first: flipping rewrites the Electron binary, which would break a signature made before
@@ -29,8 +32,8 @@ const profile = process.env.VF_NOTARY_PROFILE;
   const entitlements = join(__dirname, '../build/entitlements.plist');
   await sign({ app, identity, optionsForFile: () => ({ hardenedRuntime: true, entitlements }) });
   console.log('signed with', identity);
-  if (!profile) return;
-  await notarize({ appPath: app, keychainProfile: profile }); // also staples the ticket
+  if (!notaryAuth) return;
+  await notarize({ appPath: app, ...notaryAuth }); // also staples the ticket
   const zip = `${app.replace(/\.app$/, '')}.zip`;
   execFileSync('ditto', ['-c', '-k', '--keepParent', app, zip]);
   console.log('notarized →', zip);
