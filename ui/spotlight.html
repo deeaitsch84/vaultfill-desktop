@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: http: data:; style-src 'self' 'unsafe-inline'">
+<title>Vaultfill Suche</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  html, body { background: transparent; height: auto; overflow: hidden; }
+  .spot { background: #fbfbfdf5; border-radius: 16px; border: 1px solid #00000014; overflow: hidden; }
+  @media (prefers-color-scheme: dark) { .spot { background: #1d1d24f5; border-color: #ffffff1a; } }
+  .top { display: flex; align-items: center; gap: 12px; padding: 0 18px; height: 60px; }
+  .top img { width: 26px; height: 26px; border-radius: 7px; }
+  .top input { font-size: 21px; font-weight: 400; letter-spacing: -.01em; background: none; border: 0; box-shadow: none; padding: 0; height: 100%; }
+  .top input:focus { box-shadow: none; border: 0; }
+  ul { list-style: none; margin: 0; padding: 6px; border-top: 1px solid var(--line); }
+  ul:empty { display: none; }
+  li { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; cursor: default; }
+  li[aria-selected=true] { background: var(--sel); }
+  li .av { width: 32px; height: 32px; border-radius: 9px; }
+  li .av.plus { background: var(--grad); }
+  li .txt { min-width: 0; flex: 1; }
+  li .name, li .user { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  li .name { font-weight: 600; font-size: 14px; }
+  li .user { color: var(--mute); font-size: 12px; }
+  li .host { color: var(--mute); font-size: 12px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  li .enter { color: var(--acc); opacity: 0; font-size: 15px; }
+  li[aria-selected=true] .enter { opacity: 1; }
+  li.note { color: var(--mute); justify-content: center; padding: 14px; }
+  .foot { display: flex; gap: 14px; flex-wrap: wrap; padding: 8px 18px 10px; border-top: 1px solid var(--line); color: var(--mute); font-size: 11.5px; }
+  .foot span { display: inline-flex; gap: 5px; align-items: center; }
+  .err { margin: 0 12px 10px; }
+</style>
+</head>
+<body>
+  <div class="spot">
+    <div class="top">
+      <img src="../icons/icon128.png" alt="">
+      <input id="q" autocomplete="off" spellcheck="false" aria-label="Suche">
+    </div>
+    <ul id="results" role="listbox" aria-label="Logins"></ul>
+    <p class="err" id="err" role="alert"></p>
+    <div class="foot" id="foot">
+      <span><kbd>⏎</kbd> ausfüllen</span>
+      <span><kbd>⇧⏎</kbd> nur Passwort</span>
+      <span><kbd>⌘C</kbd> Benutzer</span>
+      <span><kbd>⌘⇧C</kbd> Passwort</span>
+      <span><kbd>⌘⌥C</kbd> 2FA</span>
+      <span><kbd>⌘N</kbd> neu</span>
+    </div>
+  </div>
+  <script type="module" src="spotlight.js"></script>
+</body>
+</html>
