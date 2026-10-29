@@ -85,19 +85,21 @@ sequenceDiagram
   A->>M: run_with_secrets("npx playwright test", TEST_PW = vaultfill://…/password)
   M->>V: Unix-Socket (nur dein macOS-User)
   V->>U: Erste Anfrage der Sitzung? Dialog + Touch ID
+  V->>U: Befehl anzeigen und bestätigen
   U-->>V: Erlauben
-  V->>V: Befehl mit TEST_PW starten
-  V-->>A: Exit-Code + Ausgabe, Passwort → •••
+  V-->>M: TEST_PW
+  M->>M: Befehl starten, Ausgabe schwärzen
+  M-->>A: Exit-Code + Ausgabe, Passwort → •••
 ```
 
-1. **Einstellungen → Agenten (MCP) → Verwalten:** Einträge freigeben – *Nur nutzen* oder *Nutzen + Klartext*.
+1. **Einstellungen → Agenten (MCP) → Verwalten:** Einträge freigeben – *Für Befehle* oder *Für Befehle + Klartext*. Voraussetzung: Node.js (der MCP-Server läuft mit dem System-Node).
 2. Den angezeigten `claude mcp add vaultfill …`-Befehl kopieren und im Terminal ausführen.
 
 | Tool | Liefert |
 |---|---|
 | `list_shared_logins` | Name, Benutzername, URL, Referenzen (`vaultfill://<id>/password`) – **nie Passwörter** |
-| `run_with_secrets` | Führt einen Befehl mit Secrets als Umgebungsvariablen aus; Ausgabe geschwärzt (roh, URL-kodiert, Base64) |
-| `reveal_secret` | Klartext – nur bei *Nutzen + Klartext*, **jeder Abruf per Touch ID** bestätigt |
+| `run_with_secrets` | Führt einen Befehl mit Secrets als Umgebungsvariablen aus – erst nach deiner Bestätigung (Befehl wird angezeigt, optional für die Sitzung). Läuft mit den Rechten des Agenten, nicht mit Vaultfills. Ausgabe geschwärzt (roh, URL-kodiert, Base64) |
+| `reveal_secret` | Klartext – nur bei *Für Befehle + Klartext*, **jeder Abruf per Touch ID** bestätigt |
 
 - Jede Agent-Sitzung braucht einmal deine Bestätigung; sie endet mit dem Agenten oder beim Sperren. Kein gespeichertes Token.
 - Protokoll aller Zugriffe und „Trennen“ in der App.
@@ -111,6 +113,15 @@ sequenceDiagram
 - **Touch ID** gibt eine Schlüsselbund-geschützte Kopie des User-Keys frei (gleiches Modell wie Bitwarden Desktop).
 - **Tippen** über `osascript` per stdin – das Passwort erscheint nie in der Prozessliste.
 - **Leak-Check:** nur die ersten 5 Zeichen des SHA-1-Hashes verlassen den Mac.
+- **Gehärtetes Paket:** Electron-Fuses aus (`RunAsNode`, `NODE_OPTIONS`, `--inspect`), `app.asar`-Integritätsprüfung an, Bundle versiegelt – kein anderes Programm kann als Vaultfill Code ausführen und so an den Schlüsselbund-Schlüssel kommen.
+- **Agenten:** Befehle laufen im MCP-Prozess mit den Rechten des Agenten (nicht mit Vaultfills Bedienungshilfen-Recht), jeder Befehl mit Secrets wird angezeigt und bestätigt, Agent-Angaben im Dialog bereinigt, Kopplung mit Abklingzeit nach Ablehnung.
+- **Server:** http nur für lokale Server; zu schwache oder plötzlich abgeschwächte KDF-Einstellungen werden abgelehnt. URL-Abgleich nach der Public Suffix List.
+
+### Bekannte Grenzen
+
+- Ad-hoc-Signatur: Nach jedem Neubau fragt macOS einmal nach dem Schlüsselbund-Zugriff („Immer erlauben“). Für die Weitergabe besser mit Developer ID signieren und notarisieren.
+- Touch ID gibt eine Schlüsselbund-geschützte Kopie des Schlüssels frei; eine native, biometrie-gebundene Keychain-Ablage wäre noch strenger.
+- Ein freigegebenes Passwort kann ein Befehl, den du bestätigst, absichtlich verfremdet ausgeben – nur Test-Accounts freigeben.
 
 ## 🧩 Aufbau
 
