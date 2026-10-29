@@ -58,6 +58,20 @@ npm run pack        # → dist/Vaultfill-darwin-arm64/Vaultfill.app
 
 `Vaultfill.app` nach `/Applications` ziehen, starten, anmelden. Das Icon sitzt in der Menüleiste.
 
+### Signiert & notarisiert (zum Weitergeben)
+
+Ohne Variablen wird ad-hoc signiert (lokale Nutzung). Mit einem **Developer ID Application**-Zertifikat:
+
+```bash
+# einmalig: Zugangsdaten für die Notarisierung im Schlüsselbund ablegen (App-spezifisches Passwort)
+xcrun notarytool store-credentials vaultfill-notary --apple-id <apple-id> --team-id <TEAMID>
+
+VF_SIGN_IDENTITY="Developer ID Application: <Name> (<TEAMID>)" VF_NOTARY_PROFILE=vaultfill-notary npm run pack
+# → dist/Vaultfill-darwin-arm64.zip (Hardened Runtime, notarisiert, Ticket geheftet)
+```
+
+Signiert wird *nach* dem Setzen der Electron-Fuses; Berechtigungen in `build/entitlements.plist` (JIT, Apple Events fürs Tippen).
+
 - **Erstes Tippen:** macOS fragt nach **Bedienungshilfen** (und einmalig „System Events steuern“) für Vaultfill.
 - **Immer verfügbar:** Einstellungen → *Beim Anmelden starten*.
 - Entwicklung: `npm start`.
@@ -119,7 +133,7 @@ sequenceDiagram
 
 ### Bekannte Grenzen
 
-- Ad-hoc-Signatur: Nach jedem Neubau fragt macOS einmal nach dem Schlüsselbund-Zugriff („Immer erlauben“). Für die Weitergabe besser mit Developer ID signieren und notarisieren.
+- Ad-hoc-Signatur (Standard-Build): Nach jedem Neubau fragt macOS einmal nach dem Schlüsselbund-Zugriff („Immer erlauben“). Mit Developer ID entfällt das, und Gatekeeper akzeptiert die App auf anderen Macs.
 - Touch ID gibt eine Schlüsselbund-geschützte Kopie des Schlüssels frei; eine native, biometrie-gebundene Keychain-Ablage wäre noch strenger.
 - Ein freigegebenes Passwort kann ein Befehl, den du bestätigst, absichtlich verfremdet ausgeben – nur Test-Accounts freigeben.
 
