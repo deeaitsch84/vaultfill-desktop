@@ -15,12 +15,14 @@ export async function run(ctx) {
     `{ const q = document.querySelector('#q'); q.value = ${JSON.stringify(text)}; q.dispatchEvent(new Event('input')); }`);
   const log = [];
   try {
-    const email = `smoke-${Date.now()}@example.com`, password = 'correct horse battery staple';
+    const email = `alice-${Date.now()}@example.com`, password = 'correct horse battery staple';
     await register(server, email, password, { kdf: 0, kdfIterations: 600000 });
     log.push(['login', await h.login({ server, email, password })]);
     for (const [name, username, uri, pw] of [
-      ['GitHub', 'dhaseloff', 'https://github.com', 'password123'], ['GitHub – bot', 'bot@alemo.de', 'github.com', 'password123'],
-      ['Grafana', 'admin', 'https://grafana.com', 'tY8u-Jq3w-Zp5n-Rk2m'], ['Bitbucket', 'dennis@alemo.de', 'https://bitbucket.org', 'Sommer2024']]) {
+      ['GitHub', 'alice', 'https://github.com', 'password123'], ['GitHub – CI Bot', 'ci-bot@example.com', 'github.com', 'password123'],
+      ['Grafana', 'admin', 'https://grafana.com', 'tY8u-Jq3w-Zp5n-Rk2m'], ['Bitbucket', 'alice@example.com', 'https://bitbucket.org', 'Sommer2024'],
+      ['Figma', 'alice@example.com', 'https://figma.com', 'xR4!vq-T9mz-Lp2w-Ke7c'], ['Notion', 'alice@example.com', 'https://notion.so', 'Hb3$zq-W8np-Yt5k-Rm1x'],
+      ['AWS Console', 'alice.ops', 'https://console.aws.amazon.com', 'Qm7#tz-V2kp-Nx9w-Ld4s'], ['Slack', 'alice@example.com', 'https://slack.com', 'Zr2&wq-P6nt-Hy8m-Kb3v']]) {
       await h.create({ name, username, password: pw, uri });
     }
     // --- MCP: proxy started like Claude Code would, approval/Touch ID auto-confirmed
@@ -87,6 +89,8 @@ export async function run(ctx) {
     await shot(ctx.mainWin, 'health.png');
     await ctx.mainWin.webContents.executeJavaScript("document.querySelector('#gear').click(); setTimeout(() => document.querySelector('#gear').click(), 300); setTimeout(() => document.querySelector('#agentsBtn').click(), 700)");
     await wait(2000);
+    // generic install paths instead of this machine's dev paths (screenshot is used in the README)
+    await ctx.mainWin.webContents.executeJavaScript(`document.querySelector('#mcpCmd').textContent = ${JSON.stringify("claude mcp add vaultfill -e ELECTRON_RUN_AS_NODE=1 -e VAULTFILL_SOCKET='~/Library/Application Support/Vaultfill/agent.sock' -- /Applications/Vaultfill.app/Contents/MacOS/Vaultfill /Applications/Vaultfill.app/Contents/Resources/app.asar/mcp.cjs")}`);
     await shot(ctx.mainWin, 'agents.png');
   } catch (e) {
     log.push(['FAIL', e.stack]);
