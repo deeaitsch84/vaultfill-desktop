@@ -35,7 +35,7 @@ A macOS menu-bar app with Spotlight-style quick search that types your logins st
 | 🔐 **SSO & 2FA** | Vaultwarden with SSO (e.g. Entra ID) in its own sign-in window, TOTP or e-mail 2FA. |
 | 🔄 **Live sync** | Changes from the browser extension and other clients arrive within seconds. |
 
-> macOS only for now – see [#1](https://github.com/deeaitsch84/vaultfill-desktop/issues/1) for Windows. The user interface is currently in German.
+> macOS only for now – see [#1](https://github.com/deeaitsch84/vaultfill-desktop/issues/1) for Windows.
 
 ## 📸 Screenshots
 
@@ -57,7 +57,7 @@ A macOS menu-bar app with Spotlight-style quick search that types your logins st
 **Download:** the signed and notarized app is attached to each [release](https://github.com/deeaitsch84/vaultfill-desktop/releases) – unzip, move `Vaultfill.app` to `/Applications`, start it, sign in. The icon lives in the menu bar.
 
 - **First autotype:** macOS asks for **Accessibility** (and once for "control System Events") for Vaultfill.
-- **Always available:** Settings → *Beim Anmelden starten* (start at login).
+- **Always available:** Settings → *Start at login*.
 
 ### Build it yourself
 
@@ -119,7 +119,7 @@ sequenceDiagram
   M-->>A: Exit code + output, password → •••
 ```
 
-1. **Settings → Agenten (MCP) → Verwalten:** share entries – *for commands* or *for commands + plaintext*. Requires Node.js (the MCP server runs with the system Node).
+1. **Settings → Agents (MCP) → Manage:** share entries – *for commands* or *for commands + plaintext*. Requires Node.js (the MCP server runs with the system Node).
 2. Copy the `claude mcp add vaultfill …` command shown there and run it in a terminal.
 
 | Tool | Returns |

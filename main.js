@@ -51,7 +51,7 @@ async function sync() {
 }
 
 const userKey = () => {
-  if (!mem.userKey) throw new Error('Vault gesperrt');
+  if (!mem.userKey) throw new Error('Vault locked');
   return v.toKey(v.unb64(mem.userKey));
 };
 
@@ -83,7 +83,7 @@ async function finishLogin(p, grant, { totp, provider } = {}) {
     const providers = (e.data?.twoFactorProviders || []).map(Number);
     if (!providers.length) throw e;
     const prov = [0, 1].find((x) => providers.includes(x)); // authenticator app, email
-    if (prov === undefined) throw new Error('Nur TOTP- oder E-Mail-2FA wird unterstützt');
+    if (prov === undefined) throw new Error('Only TOTP or e-mail 2FA is supported');
     mem.pending = { ...p, grant, provider: prov };
     return { needTotp: true, provider: prov };
   }
@@ -124,7 +124,7 @@ async function startSso(p) {
   const verifier = rand(), ssoState = rand(), redirect = `${p.server}/sso-connector.html`;
   const challenge = v.b64url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
   const win = new BrowserWindow({
-    width: 520, height: 720, title: 'Vaultfill – Anmeldung', autoHideMenuBar: true,
+    width: 520, height: 720, title: 'Vaultfill – Sign in', autoHideMenuBar: true,
     webPreferences: { partition: 'persist:sso', sandbox: true, contextIsolation: true, nodeIntegration: false },
   });
   win.webContents.setUserAgent(app.userAgentFallback.replace(/ (Electron|vaultfill-desktop|Vaultfill)\/\S+/g, '')); // IdPs dislike unknown browsers
@@ -138,13 +138,13 @@ async function startSso(p) {
       showMain();
       const q = new URL(url).searchParams;
       try {
-        if (q.get('state') !== ssoState) throw new Error('SSO: state stimmt nicht');
+        if (q.get('state') !== ssoState) throw new Error('SSO: state mismatch');
         resolve(await finishLogin(p, { grant_type: 'authorization_code', code: q.get('code'), code_verifier: verifier, redirect_uri: redirect }));
       } catch (err) { reject(err); }
     };
     win.webContents.on('will-redirect', onNav);
     win.webContents.on('will-navigate', onNav);
-    win.on('closed', () => { if (!done) reject(new Error('Anmeldung abgebrochen')); });
+    win.on('closed', () => { if (!done) reject(new Error('Sign-in cancelled')); });
     win.loadURL(`${p.server}/identity/connect/authorize?${new URLSearchParams({
       client_id: 'browser', redirect_uri: redirect, response_type: 'code', response_mode: 'query', scope: 'api offline_access',
       state: ssoState, code_challenge: challenge, code_challenge_method: 'S256',
@@ -157,7 +157,7 @@ async function startSso(p) {
 async function unlock({ password }) {
   let key;
   try { key = v.toKey(await v.decrypt(state.vault.profile.key, await v.stretch(await v.makeMasterKey(password, state.email, state.kdf)))); }
-  catch { throw new Error('Falsches Master-Passwort'); }
+  catch { throw new Error('Wrong master password'); }
   await openVault(key);
   sync().catch((e) => console.warn('sync', e));
   return {};
@@ -165,8 +165,8 @@ async function unlock({ password }) {
 
 // Touch ID gates a Keychain-sealed copy of the user key (same model as Bitwarden desktop biometrics).
 async function unlockTouchId() {
-  if (!state.touchKey) throw new Error('Touch ID nicht eingerichtet');
-  try { await systemPreferences.promptTouchID('Vaultfill entsperren'); } catch { throw new Error('Touch ID abgebrochen'); }
+  if (!state.touchKey) throw new Error('Touch ID is not set up');
+  try { await systemPreferences.promptTouchID('unlock Vaultfill'); } catch { throw new Error('Touch ID cancelled'); }
   await openVault(v.toKey(v.unb64(state.touchKey)));
   sync().catch((e) => console.warn('sync', e));
   return {};
@@ -174,8 +174,8 @@ async function unlockTouchId() {
 
 async function setTouchId({ on }) {
   if (on) {
-    if (!systemPreferences.canPromptTouchID()) throw new Error('Touch ID ist auf diesem Mac nicht verfügbar');
-    try { await systemPreferences.promptTouchID('Touch ID für Vaultfill aktivieren'); } catch { throw new Error('Touch ID abgebrochen'); }
+    if (!systemPreferences.canPromptTouchID()) throw new Error('Touch ID is not available on this Mac');
+    try { await systemPreferences.promptTouchID('enable Touch ID for Vaultfill'); } catch { throw new Error('Touch ID cancelled'); }
     state.touchKey = mem.userKey ?? v.b64(v.keyBytes(userKey()));
   } else delete state.touchKey;
   await save();
@@ -217,7 +217,7 @@ async function credentials(id) {
 
 async function totpOf(id) {
   const c = state.vault.ciphers.find((x) => x.id === id);
-  if (!c.login.totp) throw new Error('Kein 2FA-Schlüssel hinterlegt');
+  if (!c.login.totp) throw new Error('No 2FA secret stored');
   return v.totp(await v.decryptStr(c.login.totp, await v.itemKey(c, mem)));
 }
 
@@ -238,11 +238,11 @@ async function copy({ id, field }) {
 async function autotype({ id, passwordOnly }) {
   if (!systemPreferences.isTrustedAccessibilityClient(false)) {
     systemPreferences.isTrustedAccessibilityClient(true); // shows the macOS prompt
-    throw new Error('Bitte Vaultfill unter Systemeinstellungen → Datenschutz → Bedienungshilfen erlauben');
+    throw new Error('Please allow Vaultfill under System Settings → Privacy & Security → Accessibility');
   }
   const cred = await credentials(id);
   // Return/Tab inside a stored value would submit or jump fields in the target app
-  if (/[\0-\x1f\x7f]/.test(cred.username + cred.password)) throw new Error('Eintrag enthält Steuerzeichen – bitte kopieren statt tippen');
+  if (/[\0-\x1f\x7f]/.test(cred.username + cred.password)) throw new Error('Entry contains control characters – please copy instead of typing');
   hideSpot();
   app.hide(); // macOS re-activates the previous app
   await new Promise((r) => setTimeout(r, 250));
@@ -252,7 +252,7 @@ async function autotype({ id, passwordOnly }) {
     const p = spawn('osascript', ['-']);
     let err = '';
     p.stderr.on('data', (d) => (err += d));
-    p.on('close', (code) => code ? reject(new Error(`Tippen fehlgeschlagen: ${err.trim()}`)) : resolve());
+    p.on('close', (code) => code ? reject(new Error(`Typing failed: ${err.trim()}`)) : resolve());
     p.stdin.end(`tell application "System Events"\n${lines.join('\n')}\nend tell\n`);
   });
   return {};
@@ -277,16 +277,16 @@ async function health() {
     total: all.length,
     hibpFailed: [...leaks.values()].some((n) => n < 0),
     breached: all.filter((x) => leaks.get(x.pw) > 0).toSorted((a, b) => leaks.get(b.pw) - leaks.get(a.pw))
-      .map((x) => row(x, `${leaks.get(x.pw).toLocaleString('de-DE')}× in Datenlecks`)),
+      .map((x) => row(x, `${leaks.get(x.pw).toLocaleString('en-US')}× in data breaches`)),
     // same password next to each other (sorted locally, the password itself never leaves main)
     reused: all.filter((x) => uses.get(x.pw) > 1).toSorted((a, b) => uses.get(b.pw) - uses.get(a.pw) || (a.pw < b.pw ? -1 : a.pw > b.pw ? 1 : 0))
-      .map((x) => row(x, `${uses.get(x.pw)}× dasselbe Passwort`)),
-    weak: all.filter((x) => v.isWeak(x.pw)).map((x) => row(x, x.pw.length < 10 ? `nur ${x.pw.length} Zeichen` : 'leicht zu erraten')),
+      .map((x) => row(x, `same password ${uses.get(x.pw)}×`)),
+    weak: all.filter((x) => v.isWeak(x.pw)).map((x) => row(x, x.pw.length < 10 ? `only ${x.pw.length} characters` : 'easy to guess')),
   };
 }
 
 async function create({ name, username, password, uri }) {
-  if (!name?.trim()) throw new Error('Name fehlt');
+  if (!name?.trim()) throw new Error('Name is missing');
   await v.createLogin(state.server, await accessToken(), { name: name.trim(), username, password, uri: uri?.trim() }, userKey(), state.vault.profile.id);
   await sync();
   return {};
@@ -334,7 +334,7 @@ async function setShortcut({ accel }) {
   const old = state.shortcut || DEFAULT_SHORTCUT;
   let ok = false;
   try { ok = registerShortcut(accel); } catch {}
-  if (!ok) { registerShortcut(old); throw new Error(`${accel} ist nicht verfügbar`); }
+  if (!ok) { registerShortcut(old); throw new Error(`${accel} is not available`); }
   state.shortcut = accel;
   await save();
   return {};
@@ -372,22 +372,22 @@ const clean = (s, max) => String(s ?? '').replace(/[\p{Cc}\p{Cf}]/gu, ' ').trim(
 async function approveAgent({ client, cwd }) {
   app.focus({ steal: true });
   const { response } = await dialog.showMessageBox({
-    type: 'question', buttons: ['Erlauben', 'Ablehnen'], defaultId: 1, cancelId: 1,
-    message: 'Ein Agent möchte auf freigegebene Logins zugreifen',
-    detail: `Angaben des Agenten (nicht überprüfbar):\nName: ${client}\nOrdner: ${cwd}\n\nNur erlauben, wenn du gerade selbst einen Agenten gestartet hast. Gilt, bis er beendet oder Vaultfill gesperrt wird.`,
+    type: 'question', buttons: ['Allow', 'Deny'], defaultId: 1, cancelId: 1,
+    message: 'An agent wants to access shared logins',
+    detail: `Reported by the agent (cannot be verified):\nName: ${client}\nFolder: ${cwd}\n\nOnly allow this if you just started an agent yourself. Valid until it exits or Vaultfill locks.`,
   });
   if (response !== 0) return false;
   if (!systemPreferences.canPromptTouchID()) return true;
-  try { await systemPreferences.promptTouchID(`Agent „${client}“ Zugriff erlauben`); return true; } catch { return false; }
+  try { await systemPreferences.promptTouchID(`allow agent “${client}” to access shared logins`); return true; } catch { return false; }
 }
 
 async function confirmRun(session, command, names) {
   app.focus({ steal: true });
   const { response, checkboxChecked } = await dialog.showMessageBox({
-    type: 'warning', buttons: ['Ausführen', 'Ablehnen'], defaultId: 1, cancelId: 1,
-    message: `Agent „${session.client}“ möchte einen Befehl mit Zugangsdaten ausführen`,
-    detail: `Zugangsdaten: ${names}\n\nBefehl:\n${command.replace(/[\p{Cf}]|[\0-\x09\x0b-\x1f\x7f]/gu, ' ').slice(0, 1500)}\n\nDer Befehl bekommt die Passwörter im Klartext.`,
-    checkboxLabel: 'Für diese Agent-Sitzung nicht mehr fragen',
+    type: 'warning', buttons: ['Run', 'Deny'], defaultId: 1, cancelId: 1,
+    message: `Agent “${session.client}” wants to run a command with credentials`,
+    detail: `Credentials: ${names}\n\nCommand:\n${command.replace(/[\p{Cf}]|[\0-\x09\x0b-\x1f\x7f]/gu, ' ').slice(0, 1500)}\n\nThe command receives the passwords in plain text.`,
+    checkboxLabel: 'Don’t ask again for this agent session',
   });
   if (response !== 0) return false;
   if (checkboxChecked) session.trustRuns = true;
@@ -395,12 +395,12 @@ async function confirmRun(session, command, names) {
 }
 
 async function confirmReveal(session, name) {
-  const why = `Agent „${session.client}“ möchte das Passwort von „${name}“ im Klartext`;
+  const why = `reveal the password of “${name}” to agent “${session.client}”`;
   if (systemPreferences.canPromptTouchID()) {
     try { await systemPreferences.promptTouchID(why); return true; } catch { return false; }
   }
   app.focus({ steal: true });
-  return (await dialog.showMessageBox({ type: 'warning', buttons: ['Erlauben', 'Ablehnen'], defaultId: 1, cancelId: 1, message: why })).response === 0;
+  return (await dialog.showMessageBox({ type: 'warning', buttons: ['Allow', 'Deny'], defaultId: 1, cancelId: 1, message: `Allow: ${why}?` })).response === 0;
 }
 
 function agentLog(session, action, name = '') {
@@ -412,13 +412,13 @@ function agentLog(session, action, name = '') {
 function sharedEntry(id, need) {
   const level = state.agentShares?.[id];
   const e = mem.index?.find((x) => x.id === id);
-  if (!e || !level || (need === 'reveal' && level !== 'reveal')) throw new Error(`Eintrag ${id} ist für Agenten nicht ${need === 'reveal' ? 'im Klartext ' : ''}freigegeben`);
+  if (!e || !level || (need === 'reveal' && level !== 'reveal')) throw new Error(`Entry ${id} is not shared with agents${need === 'reveal' ? ' for plain-text access' : ''}`);
   return e;
 }
 
 async function secretOf(ref, need) {
   const m = /^vaultfill:\/\/([^/]+)\/(username|password|totp)$/.exec(ref);
-  if (!m) throw new Error(`Ungültige Referenz ${ref} (erwartet vaultfill://<id>/<username|password|totp>)`);
+  if (!m) throw new Error(`Invalid reference ${ref} (expected vaultfill://<id>/<username|password|totp>)`);
   const e = sharedEntry(m[1], need);
   const c = state.vault.ciphers.find((x) => x.id === e.id);
   const value = m[2] === 'totp' ? (await totpOf(e.id)).code : await v.decryptStr(c.login[m[2]], await v.itemKey(c, mem));
@@ -435,24 +435,24 @@ const agentMethods = {
 
   // Resolves secret refs for a command mcp.cjs is about to run; the user sees and confirms the command.
   async resolve({ command, env = {} }, session, sock) {
-    if (typeof command !== 'string' || !command.trim()) throw new Error('command fehlt');
+    if (typeof command !== 'string' || !command.trim()) throw new Error('command is missing');
     const values = {}, used = new Set();
     for (const [k, ref] of Object.entries(env)) {
-      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(k)) throw new Error(`Ungültiger Variablenname ${k}`);
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(k)) throw new Error(`Invalid variable name ${k}`);
       const { e, value } = await secretOf(String(ref), 'use');
       values[k] = value;
       used.add(e.name);
     }
-    if (used.size && !session.trustRuns && !(await hooks.confirmRun(session, command, [...used].join(', ')))) throw new Error('Vom Benutzer abgelehnt');
-    if (!stillActive(sock)) throw new Error('Sitzung beendet (Vaultfill gesperrt?)');
+    if (used.size && !session.trustRuns && !(await hooks.confirmRun(session, command, [...used].join(', ')))) throw new Error('Denied by the user');
+    if (!stillActive(sock)) throw new Error('Session ended (Vaultfill locked?)');
     agentLog(session, `Befehl: ${command.slice(0, 120)}`, [...used].join(', '));
     return { values };
   },
 
   async reveal({ ref }, session, sock) {
     const { e, field, value } = await secretOf(String(ref), 'reveal');
-    if (field !== 'username' && !(await hooks.confirmReveal(session, e.name))) throw new Error('Vom Benutzer abgelehnt');
-    if (!stillActive(sock)) throw new Error('Sitzung beendet (Vaultfill gesperrt?)');
+    if (field !== 'username' && !(await hooks.confirmReveal(session, e.name))) throw new Error('Denied by the user');
+    if (!stillActive(sock)) throw new Error('Session ended (Vaultfill locked?)');
     agentLog(session, `Klartext: ${field}`, e.name);
     return value;
   },
@@ -463,17 +463,17 @@ async function onAgentMessage(sock, line) {
   try { msg = JSON.parse(line); } catch { return; }
   const reply = (r) => sock.writable && sock.write(`${JSON.stringify({ id: msg.id, ...r })}\n`);
   try {
-    if (!mem.index) throw new Error('Vaultfill ist gesperrt – bitte entsperren');
+    if (!mem.index) throw new Error('Vaultfill is locked – please unlock it');
     let session = sessions.get(sock);
     if (msg.method === 'hello') {
       if (!session) {
-        if (pairing.has(sock)) throw new Error('Kopplung läuft bereits');
-        if (Date.now() < denyUntil) throw new Error('Kurz zuvor abgelehnt – bitte später erneut versuchen');
+        if (pairing.has(sock)) throw new Error('Pairing already in progress');
+        if (Date.now() < denyUntil) throw new Error('Recently denied – please try again later');
         pairing.add(sock);
         try {
           const info = { client: clean(msg.params?.client, 60), cwd: clean(msg.params?.cwd, 200) };
-          if (!(await hooks.approveAgent(info))) { denyUntil = Date.now() + DENY_COOLDOWN_MS; throw new Error('Zugriff vom Benutzer abgelehnt'); }
-          if (!mem.index || sock.destroyed) throw new Error('Vaultfill wurde inzwischen gesperrt'); // lock while the dialog was open
+          if (!(await hooks.approveAgent(info))) { denyUntil = Date.now() + DENY_COOLDOWN_MS; throw new Error('Access denied by the user'); }
+          if (!mem.index || sock.destroyed) throw new Error('Vaultfill was locked in the meantime'); // lock while the dialog was open
           session = { ...info, since: Date.now() };
           sessions.set(sock, session);
           agentLog(session, 'verbunden');
@@ -481,8 +481,8 @@ async function onAgentMessage(sock, line) {
       }
       return reply({ result: {} });
     }
-    if (!session) throw new Error('Nicht gekoppelt');
-    if (!Object.hasOwn(agentMethods, msg.method)) throw new Error('Unbekannte Methode');
+    if (!session) throw new Error('Not paired');
+    if (!Object.hasOwn(agentMethods, msg.method)) throw new Error('Unknown method');
     reply({ result: await agentMethods[msg.method](msg.params || {}, session, sock) });
   } catch (e) {
     reply({ error: e.message });
@@ -531,7 +531,7 @@ async function agentState() {
 }
 
 async function setShare({ id, level }) {
-  if (!mem.index?.some((e) => e.id === id)) throw new Error('Unbekannter Eintrag');
+  if (!mem.index?.some((e) => e.id === id)) throw new Error('Unknown entry');
   state.agentShares = { ...state.agentShares };
   if (['use', 'reveal'].includes(level)) state.agentShares[id] = level; else delete state.agentShares[id];
   await save();
@@ -638,13 +638,13 @@ app.whenReady().then(async () => {
   tray = new Tray(img);
   tray.setToolTip('Vaultfill');
   const menu = () => Menu.buildFromTemplate([
-    { label: 'Schnellsuche', accelerator: state.shortcut || DEFAULT_SHORTCUT, click: toggleSpot },
-    { label: 'Vaultfill öffnen', click: () => showMain() },
-    { label: 'Neuer Login …', enabled: !!mem.index, click: () => showMain({ view: 'new' }) },
-    { label: 'Einstellungen …', accelerator: 'Command+,', enabled: !!mem.index, click: () => showMain({ view: 'settings' }) },
+    { label: 'Quick search', accelerator: state.shortcut || DEFAULT_SHORTCUT, click: toggleSpot },
+    { label: 'Open Vaultfill', click: () => showMain() },
+    { label: 'New login …', enabled: !!mem.index, click: () => showMain({ view: 'new' }) },
+    { label: 'Settings …', accelerator: 'Command+,', enabled: !!mem.index, click: () => showMain({ view: 'settings' }) },
     { type: 'separator' },
-    { label: mem.index ? 'Sperren' : 'Gesperrt', enabled: !!mem.index, click: lock },
-    { label: 'Beenden', role: 'quit' },
+    { label: mem.index ? 'Lock' : 'Locked', enabled: !!mem.index, click: lock },
+    { label: 'Quit', role: 'quit' },
   ]);
   tray.on('click', () => tray.popUpContextMenu(menu()));
   tray.on('right-click', () => tray.popUpContextMenu(menu()));

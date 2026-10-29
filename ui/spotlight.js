@@ -10,7 +10,7 @@ async function refresh() {
   mode = !st.loggedIn ? 'login' : !st.unlocked ? 'unlock' : 'search';
   const q = $('#q');
   q.type = mode === 'unlock' ? 'password' : 'text';
-  q.placeholder = { search: 'Logins durchsuchen', unlock: st.touchId ? 'Master-Passwort oder Touch ID …' : 'Master-Passwort', login: 'Nicht angemeldet – ⏎ öffnet Vaultfill' }[mode];
+  q.placeholder = { search: 'Search logins', unlock: st.touchId ? 'Master password or Touch ID …' : 'Master password', login: 'Not signed in – ⏎ opens Vaultfill' }[mode];
   $('#foot').hidden = mode !== 'search';
   await render();
 }
@@ -19,7 +19,7 @@ async function render() {
   const q = $('#q').value.trim();
   if (mode === 'search') {
     items = (await call({ type: 'search', q, limit: 8 })).items;
-    if (q) items.push({ create: true, name: `„${q}“ als neuen Login speichern`, username: '⌘N' });
+    if (q) items.push({ create: true, name: `Save “${q}” as a new login`, username: '⌘N' });
   } else items = [];
   sel = Math.min(sel, Math.max(items.length - 1, 0));
   $('#results').replaceChildren(...items.map((it, i) => el('li', {
@@ -31,7 +31,7 @@ async function render() {
   el('span', { className: 'txt' }, el('div', { className: 'name', textContent: it.name }), el('div', { className: 'user', textContent: it.username || '—' })),
   ...(it.host ? [el('span', { className: 'host', textContent: it.host })] : []),
   el('span', { className: 'enter', textContent: '↵' }))));
-  if (mode === 'search' && !items.length) $('#results').append(el('li', { className: 'note', textContent: 'Tippen zum Suchen' }));
+  if (mode === 'search' && !items.length) $('#results').append(el('li', { className: 'note', textContent: 'Type to search' }));
   fit();
 }
 

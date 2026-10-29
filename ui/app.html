@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'">
@@ -84,86 +84,86 @@
 
   <main>
     <form id="login" class="auth" hidden>
-      <div class="hero"><img src="../icons/icon128.png" alt=""><h1>Bei Vaultwarden anmelden</h1><p>Bei SSO öffnet sich ein Anmeldefenster.</p></div>
+      <div class="hero"><img src="../icons/icon128.png" alt=""><h1>Sign in to Vaultwarden</h1><p>With SSO a sign-in window opens.</p></div>
       <input name="server" type="url" placeholder="https://vault.example.com" aria-label="Server" required>
-      <input name="email" type="email" placeholder="E-Mail" aria-label="E-Mail" required>
-      <input name="password" type="password" placeholder="Master-Passwort" aria-label="Master-Passwort" required>
-      <button class="btn primary block">Anmelden</button>
+      <input name="email" type="email" placeholder="E-mail" aria-label="E-mail" required>
+      <input name="password" type="password" placeholder="Master password" aria-label="Master password" required>
+      <button class="btn primary block">Sign in</button>
     </form>
 
     <form id="totp" class="auth" hidden>
-      <div class="hero"><img src="../icons/icon128.png" alt=""><h1>Zwei-Faktor-Code</h1><p id="totpHint"></p></div>
-      <input name="totp" placeholder="123 456" aria-label="2FA-Code" inputmode="numeric" required style="text-align:center;font-size:18px;letter-spacing:.2em">
-      <button class="btn primary block">Bestätigen</button>
+      <div class="hero"><img src="../icons/icon128.png" alt=""><h1>Two-factor code</h1><p id="totpHint"></p></div>
+      <input name="totp" placeholder="123 456" aria-label="2FA code" inputmode="numeric" required style="text-align:center;font-size:18px;letter-spacing:.2em">
+      <button class="btn primary block">Confirm</button>
     </form>
 
     <form id="unlock" class="auth" hidden>
-      <div class="hero"><img src="../icons/icon128.png" alt=""><h1>Vault gesperrt</h1><p id="who"></p></div>
-      <button type="button" class="btn primary block" id="touch" hidden><svg><use href="icons.svg#i-finger"/></svg>Mit Touch ID entsperren</button>
-      <div class="or" id="or" hidden>oder</div>
+      <div class="hero"><img src="../icons/icon128.png" alt=""><h1>Vault locked</h1><p id="who"></p></div>
+      <button type="button" class="btn primary block" id="touch" hidden><svg><use href="icons.svg#i-finger"/></svg>Unlock with Touch ID</button>
+      <div class="or" id="or" hidden>or</div>
       <div class="inline">
-        <input name="password" type="password" placeholder="Master-Passwort" aria-label="Master-Passwort" required>
-        <button class="btn soft" aria-label="Entsperren"><svg><use href="icons.svg#i-arrow"/></svg></button>
+        <input name="password" type="password" placeholder="Master password" aria-label="Master password" required>
+        <button class="btn soft" aria-label="Unlock"><svg><use href="icons.svg#i-arrow"/></svg></button>
       </div>
-      <label class="optin" id="touchOptIn" hidden><input type="checkbox" class="switch" name="enableTouch"> Künftig mit Touch ID entsperren</label>
-      <button type="button" class="btn danger" data-act="logout">Abmelden</button>
+      <label class="optin" id="touchOptIn" hidden><input type="checkbox" class="switch" name="enableTouch"> Unlock with Touch ID from now on</label>
+      <button type="button" class="btn danger" data-act="logout">Sign out</button>
     </form>
 
     <header class="bar" id="bar" hidden>
       <span class="title" id="barTitle">Vaultfill</span>
-      <button type="button" class="icon-btn" id="healthBtn" title="Sicherheit" aria-label="Sicherheit"><svg><use href="icons.svg#i-shield"/></svg></button>
-      <button type="button" class="icon-btn" id="newBtn" title="Neuer Login (⌘N)" aria-label="Neuer Login"><svg><use href="icons.svg#i-plus"/></svg></button>
-      <button type="button" class="icon-btn" id="syncBtn" title="Synchronisieren" aria-label="Synchronisieren"><svg><use href="icons.svg#i-sync"/></svg></button>
-      <button type="button" class="icon-btn" data-act="lock" title="Sperren" aria-label="Sperren"><svg><use href="icons.svg#i-lock"/></svg></button>
-      <button type="button" class="icon-btn" id="gear" title="Einstellungen (⌘,)" aria-label="Einstellungen"><svg><use href="icons.svg#i-gear"/></svg></button>
+      <button type="button" class="icon-btn" id="healthBtn" title="Security" aria-label="Security"><svg><use href="icons.svg#i-shield"/></svg></button>
+      <button type="button" class="icon-btn" id="newBtn" title="New login (⌘N)" aria-label="New login"><svg><use href="icons.svg#i-plus"/></svg></button>
+      <button type="button" class="icon-btn" id="syncBtn" title="Sync" aria-label="Sync"><svg><use href="icons.svg#i-sync"/></svg></button>
+      <button type="button" class="icon-btn" data-act="lock" title="Lock" aria-label="Lock"><svg><use href="icons.svg#i-lock"/></svg></button>
+      <button type="button" class="icon-btn" id="gear" title="Settings (⌘,)" aria-label="Settings"><svg><use href="icons.svg#i-gear"/></svg></button>
     </header>
 
     <section id="list" hidden style="display:flex;flex-direction:column;flex:1;min-height:0">
-      <div class="search field"><svg style="left:25px"><use href="icons.svg#i-search"/></svg><input id="q" type="search" placeholder="Suchen" aria-label="Einträge suchen"></div>
-      <ul id="results" aria-label="Einträge"></ul>
+      <div class="search field"><svg style="left:25px"><use href="icons.svg#i-search"/></svg><input id="q" type="search" placeholder="Search" aria-label="Search entries"></div>
+      <ul id="results" aria-label="Entries"></ul>
       <div class="foot"><span class="dot"></span><span id="info"></span></div>
     </section>
 
     <form id="new" class="pane" hidden>
-      <h2>Neuer Login</h2>
-      <label class="f">Name<input name="name" required placeholder="z. B. GitHub"></label>
+      <h2>New login</h2>
+      <label class="f">Name<input name="name" required placeholder="e.g. GitHub"></label>
       <label class="f">Website<input name="uri" placeholder="https://github.com"></label>
-      <label class="f">Benutzername<input name="username" autocomplete="off"></label>
-      <label class="f">Passwort
+      <label class="f">Username<input name="username" autocomplete="off"></label>
+      <label class="f">Password
         <span class="field"><input name="password" type="password" autocomplete="new-password" style="padding-right:70px">
           <span class="in-btn" style="display:flex">
-            <button type="button" class="icon-btn" id="showPw" title="Anzeigen" aria-label="Passwort anzeigen"><svg><use href="icons.svg#i-eye"/></svg></button>
-            <button type="button" class="icon-btn" id="genPw" title="Generieren" aria-label="Passwort generieren"><svg><use href="icons.svg#i-dice"/></svg></button>
+            <button type="button" class="icon-btn" id="showPw" title="Show" aria-label="Show password"><svg><use href="icons.svg#i-eye"/></svg></button>
+            <button type="button" class="icon-btn" id="genPw" title="Generate" aria-label="Generate password"><svg><use href="icons.svg#i-dice"/></svg></button>
           </span>
         </span>
       </label>
       <div class="inline" style="margin-top:4px">
-        <button type="button" class="btn soft" id="cancelNew" style="flex:1">Abbrechen</button>
-        <button class="btn primary" style="flex:2">Speichern</button>
+        <button type="button" class="btn soft" id="cancelNew" style="flex:1">Cancel</button>
+        <button class="btn primary" style="flex:2">Save</button>
       </div>
     </form>
 
     <section id="health" class="pane" hidden>
       <div class="tiles">
-        <div class="tile bad"><b id="nBreached">–</b><span>geleakt</span></div>
-        <div class="tile warn"><b id="nReused">–</b><span>mehrfach</span></div>
-        <div class="tile meh"><b id="nWeak">–</b><span>schwach</span></div>
+        <div class="tile bad"><b id="nBreached">–</b><span>breached</span></div>
+        <div class="tile warn"><b id="nReused">–</b><span>reused</span></div>
+        <div class="tile meh"><b id="nWeak">–</b><span>weak</span></div>
       </div>
       <p class="hint" id="healthHint"></p>
       <div id="healthLists"></div>
     </section>
 
     <section id="agents" class="pane" hidden>
-      <p class="hint">Agenten sehen nur freigegebene Einträge und nie direkt Passwörter: Die bekommen nur Befehle, die du bestätigst (Ausgabe geschwärzt). Ein Befehl kann ein Passwort aber absichtlich verfremdet ausgeben – gib deshalb nur Test-Accounts frei. Jede Agent-Sitzung bestätigst du einmal per Touch ID.</p>
-      <h3>Freigegeben</h3>
+      <p class="hint">Agents only see shared entries and never passwords directly: those only go to commands you confirm (output redacted). A command could still deliberately print a password in transformed form – so share test accounts only. You approve every agent session once with Touch ID.</p>
+      <h3>Shared</h3>
       <ul id="shares"></ul>
-      <div class="field"><svg><use href="icons.svg#i-search"/></svg><input id="shareQ" placeholder="Eintrag freigeben …" aria-label="Eintrag zum Freigeben suchen"></div>
+      <div class="field"><svg><use href="icons.svg#i-search"/></svg><input id="shareQ" placeholder="Share an entry …" aria-label="Search an entry to share"></div>
       <ul id="shareHits"></ul>
-      <h3>Aktive Agenten</h3>
+      <h3>Active agents</h3>
       <ul id="sessions"></ul>
-      <h3>Einrichtung (Claude Code)</h3>
-      <div class="code"><code id="mcpCmd"></code><button type="button" class="icon-btn" id="copyCmd" title="Kopieren" aria-label="Befehl kopieren"><svg><use href="icons.svg#i-copy"/></svg></button></div>
-      <h3>Protokoll</h3>
+      <h3>Setup (Claude Code)</h3>
+      <div class="code"><code id="mcpCmd"></code><button type="button" class="icon-btn" id="copyCmd" title="Copy" aria-label="Copy command"><svg><use href="icons.svg#i-copy"/></svg></button></div>
+      <h3>Log</h3>
       <ul id="agentLog"></ul>
     </section>
 
@@ -171,31 +171,31 @@
       <div class="card">
         <div class="row">
           <span class="ico"><svg><use href="icons.svg#i-command"/></svg></span>
-          <div class="t"><b>Schnellsuche</b><span>Systemweites Tastenkürzel</span></div>
+          <div class="t"><b>Quick search</b><span>System-wide shortcut</span></div>
           <button type="button" class="btn soft keycap" id="shortcut"></button>
         </div>
       </div>
       <div class="card">
         <div class="row">
           <span class="ico"><svg><use href="icons.svg#i-finger"/></svg></span>
-          <div class="t"><b>Touch ID</b><span id="touchSub">Entsperren per Fingerabdruck</span></div>
+          <div class="t"><b>Touch ID</b><span id="touchSub">Unlock with your fingerprint</span></div>
           <input type="checkbox" class="switch" id="touchSwitch" aria-label="Touch ID">
         </div>
         <div class="row">
           <span class="ico"><svg><use href="icons.svg#i-power"/></svg></span>
-          <div class="t"><b>Beim Anmelden starten</b><span>Damit das Kürzel immer funktioniert</span></div>
-          <input type="checkbox" class="switch" id="loginSwitch" aria-label="Beim Anmelden starten">
+          <div class="t"><b>Start at login</b><span>So the shortcut always works</span></div>
+          <input type="checkbox" class="switch" id="loginSwitch" aria-label="Start at login">
         </div>
       </div>
       <div class="card">
         <div class="row">
           <span class="ico"><svg><use href="icons.svg#i-bot"/></svg></span>
-          <div class="t"><b>Agenten (MCP)</b><span id="agentSub">Test-Zugangsdaten für KI-Agenten freigeben</span></div>
-          <button type="button" class="btn soft" id="agentsBtn">Verwalten</button>
+          <div class="t"><b>Agents (MCP)</b><span id="agentSub">Share test credentials with AI agents</span></div>
+          <button type="button" class="btn soft" id="agentsBtn">Manage</button>
         </div>
       </div>
-      <p style="color:var(--mute);font-size:11.5px;margin:0 4px">Auto-Sperre nach 30 min Leerlauf oder bei Bildschirmsperre. Kopierte Passwörter werden nach 30 s aus der Zwischenablage entfernt.</p>
-      <button type="button" class="btn soft block" data-act="logout"><svg><use href="icons.svg#i-logout"/></svg>Abmelden</button>
+      <p style="color:var(--mute);font-size:11.5px;margin:0 4px">Auto-lock after 30 min idle, on screen lock or sleep. Copied passwords and 2FA codes are cleared from the clipboard after 30 s.</p>
+      <button type="button" class="btn soft block" data-act="logout"><svg><use href="icons.svg#i-logout"/></svg>Sign out</button>
     </section>
   </main>
 

@@ -47,7 +47,7 @@ Any change touching these needs a test (unit, E2E or smoke) that would fail if t
 - **`vault.js` is shared**: change it in both repos in the same way and keep the files identical (`cmp`). Same for its unit tests.
 - **Dependencies**: as few as possible, exact versions (`--save-exact`), no runtime dependencies besides the vendored `lib/`. Justify any new one in the commit message.
 - **Crypto**: WebCrypto / Node crypto only. No hand-rolled primitives beyond the Bitwarden formats already in `vault.js`.
-- **Code** and comments in English; **UI text** in German. Comments explain *why*, not what.
+- **Everything in English**: code, comments, UI text, docs, issues. Comments explain *why*, not what.
 - **Commits**: Conventional Commits in English (`feat:`, `fix(security):`, `build:`, `docs:`, `test:`), one logical change per commit, body explains the reason.
 - **Git**: never rewrite `main` or tags; no force pushes. Feature work on branches, merge via PR.
 

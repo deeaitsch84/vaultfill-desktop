@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>NSAppleEventsUsageDescription</key><string>Vaultfill tippt Benutzername und Passwort in die zuvor aktive App.</string>
+  <key>NSAppleEventsUsageDescription</key><string>Vaultfill types username and password into the previously active app.</string>
   <key>LSUIElement</key><true/>
 </dict>
 </plist>

@@ -21,19 +21,19 @@ async function render() {
   for (const id of ['login', 'totp', 'unlock', 'list', 'new', 'settings', 'health', 'agents']) $(`#${id}`).hidden = id !== v;
   $('#bar').hidden = !['list', 'new', 'settings', 'health', 'agents'].includes(v);
   $('#drag').hidden = !$('#bar').hidden; // the header bar is the drag area when shown
-  $('#barTitle').textContent = { list: 'Vaultfill', new: '', settings: 'Einstellungen', health: 'Sicherheit', agents: 'Agenten' }[v] ?? '';
+  $('#barTitle').textContent = { list: 'Vaultfill', new: '', settings: 'Settings', health: 'Security', agents: 'Agents' }[v] ?? '';
   $('#healthBtn').hidden = v !== 'list';
   $('#gear').replaceChildren(icon(v === 'list' ? 'gear' : 'back'));
   $('#newBtn').hidden = v !== 'list';
 
-  $('#totpHint').textContent = st.pendingTotp === 1 ? 'Code aus der E-Mail eingeben' : 'Code aus der Authenticator-App eingeben';
+  $('#totpHint').textContent = st.pendingTotp === 1 ? 'Enter the code from the e-mail' : 'Enter the code from your authenticator app';
   $('#who').textContent = st.email;
   $('#touch').hidden = $('#or').hidden = !st.touchId;
   $('#touchOptIn').hidden = st.touchId || !st.touchIdAvailable;
-  $('#info').textContent = `${st.count} Logins · synchronisiert ${new Date(st.lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  $('#info').textContent = `${st.count} logins · synced ${new Date(st.lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   $('#touchSwitch').checked = st.touchId;
   $('#touchSwitch').disabled = !st.touchIdAvailable;
-  $('#touchSub').textContent = st.touchIdAvailable ? 'Entsperren per Fingerabdruck' : 'Auf diesem Mac nicht verfügbar';
+  $('#touchSub').textContent = st.touchIdAvailable ? 'Unlock with your fingerprint' : 'Not available on this Mac';
   $('#loginSwitch').checked = st.openAtLogin;
   if (!recording) $('#shortcut').textContent = pretty(st.shortcut);
 
@@ -59,15 +59,15 @@ async function search() {
     avatar(it, st.server),
     el('span', { className: 'txt' }, el('div', { className: 'name', textContent: it.name }), el('div', { className: 'user', textContent: it.username || '—' })),
     el('span', { className: 'acts' },
-      act(it.id, 'username', 'user', 'Benutzername kopieren (⌘C)'),
-      act(it.id, 'password', 'key', 'Passwort kopieren (⌘⇧C)'),
-      ...(it.totp ? [act(it.id, 'totp', 'clock', '2FA-Code kopieren')] : []),
-      ...(it.host ? [el('button', { type: 'button', className: 'icon-btn', title: 'Website öffnen', ariaLabel: 'Website öffnen', onclick: () => call({ type: 'openUrl', url: `https://${it.host}` }) }, icon('link'))] : [])))));
-  if (!res.items.length) $('#results').append(el('li', { className: 'empty', textContent: q ? 'Nichts gefunden' : 'Noch keine Logins' }));
+      act(it.id, 'username', 'user', 'Copy username (⌘C)'),
+      act(it.id, 'password', 'key', 'Copy password (⌘⇧C)'),
+      ...(it.totp ? [act(it.id, 'totp', 'clock', 'Copy 2FA code')] : []),
+      ...(it.host ? [el('button', { type: 'button', className: 'icon-btn', title: 'Open website', ariaLabel: 'Open website', onclick: () => call({ type: 'openUrl', url: `https://${it.host}` }) }, icon('link'))] : [])))));
+  if (!res.items.length) $('#results').append(el('li', { className: 'empty', textContent: q ? 'Nothing found' : 'No logins yet' }));
 }
 
 async function copy(id, field) {
-  if (await run(() => call({ type: 'copy', id, field }))) show(`${{ password: 'Passwort', totp: '2FA-Code', username: 'Benutzername' }[field]} kopiert`, 'info');
+  if (await run(() => call({ type: 'copy', id, field }))) show(`${{ password: 'Password', totp: '2FA code', username: 'Username' }[field]} copied`, 'info');
 }
 
 $('#q').addEventListener('input', search);
@@ -108,7 +108,7 @@ $('#new').addEventListener('submit', async (e) => {
   if (await run(() => call({ type: 'create', ...f }))) {
     view = 'list';
     await render();
-    show(`„${f.name}“ gespeichert`, 'info');
+    show(`“${f.name}” saved`, 'info');
   }
 });
 
@@ -118,21 +118,21 @@ let healthRun = null; // result is kept until the vault changes
 async function runHealth() {
   healthRun = run(() => call({ type: 'health' }));
   for (const id of ['nBreached', 'nReused', 'nWeak']) $(`#${id}`).textContent = '…';
-  $('#healthHint').textContent = 'Prüfe … Datenlecks via Have I Been Pwned (nur ein Hash-Präfix verlässt den Mac)';
+  $('#healthHint').textContent = 'Checking … breaches via Have I Been Pwned (only a hash prefix leaves the Mac)';
   $('#healthLists').replaceChildren();
   const r = await healthRun;
   if (!r) { healthRun = null; return; }
   $('#nBreached').textContent = r.breached.length;
   $('#nReused').textContent = r.reused.length;
   $('#nWeak').textContent = r.weak.length;
-  $('#healthHint').textContent = r.hibpFailed ? 'Datenleck-Prüfung teilweise fehlgeschlagen (offline?).' : `${r.total} Passwörter geprüft.`;
+  $('#healthHint').textContent = r.hibpFailed ? 'Breach check partly failed (offline?).' : `${r.total} passwords checked.`;
   const section = (title, rows) => rows.length ? [el('h3', { textContent: title }), el('ul', {}, ...rows.map((it) => el('li', {},
     avatar(it, st.server),
     el('span', { className: 'txt' }, el('div', { className: 'name', textContent: it.name }), el('div', { className: 'user', textContent: it.username || '—' })),
     el('span', { className: 'badge', textContent: it.reason }),
-    ...(it.host ? [el('button', { type: 'button', className: 'icon-btn', title: 'Website öffnen, um das Passwort zu ändern', ariaLabel: 'Website öffnen', onclick: () => call({ type: 'openUrl', url: `https://${it.host}` }) }, icon('link'))] : []))))] : [];
-  $('#healthLists').replaceChildren(...section('Geleakt', r.breached), ...section('Mehrfach verwendet', r.reused), ...section('Schwach', r.weak));
-  if (!r.breached.length && !r.reused.length && !r.weak.length) $('#healthLists').append(el('p', { className: 'hint', textContent: '✓ Alles im grünen Bereich.' }));
+    ...(it.host ? [el('button', { type: 'button', className: 'icon-btn', title: 'Open the website to change the password', ariaLabel: 'Open website', onclick: () => call({ type: 'openUrl', url: `https://${it.host}` }) }, icon('link'))] : []))))] : [];
+  $('#healthLists').replaceChildren(...section('Breached', r.breached), ...section('Reused', r.reused), ...section('Weak', r.weak));
+  if (!r.breached.length && !r.reused.length && !r.weak.length) $('#healthLists').append(el('p', { className: 'hint', textContent: '✓ All good.' }));
 }
 
 $('#healthBtn').addEventListener('click', () => { view = 'health'; render(); });
@@ -143,25 +143,25 @@ const ago = (ts) => new Date(ts).toLocaleString([], { day: '2-digit', month: '2-
 async function renderAgents() {
   const a = await run(() => call({ type: 'agentState' }));
   if (!a) return;
-  $('#agentSub').textContent = a.shares.length ? `${a.shares.length} freigegeben · ${a.sessions.length} aktiv` : 'Test-Zugangsdaten für KI-Agenten freigeben';
+  $('#agentSub').textContent = a.shares.length ? `${a.shares.length} shared · ${a.sessions.length} active` : 'Share test credentials with AI agents';
   if ($('#agents').hidden) return;
-  const level = (sh) => el('select', { ariaLabel: `Freigabe für ${sh.name}`, onchange: (e) => setShare(sh.id, e.target.value) },
-    el('option', { value: 'use', textContent: 'Für Befehle', selected: sh.level === 'use' }),
-    el('option', { value: 'reveal', textContent: 'Für Befehle + Klartext', selected: sh.level === 'reveal' }));
+  const level = (sh) => el('select', { ariaLabel: `Sharing for ${sh.name}`, onchange: (e) => setShare(sh.id, e.target.value) },
+    el('option', { value: 'use', textContent: 'For commands', selected: sh.level === 'use' }),
+    el('option', { value: 'reveal', textContent: 'For commands + plaintext', selected: sh.level === 'reveal' }));
   $('#shares').replaceChildren(...a.shares.map((sh) => el('li', {},
     avatar(sh, null),
     el('span', { className: 'txt' }, el('div', { className: 'name', textContent: sh.name }), el('div', { className: 'user', textContent: sh.username || '—' })),
     level(sh),
-    el('button', { type: 'button', className: 'icon-btn', title: 'Freigabe entfernen', ariaLabel: `Freigabe für ${sh.name} entfernen`, onclick: () => setShare(sh.id, null) }, icon('x')))));
-  if (!a.shares.length) $('#shares').append(el('li', { className: 'none', textContent: 'Noch nichts freigegeben.' }));
+    el('button', { type: 'button', className: 'icon-btn', title: 'Stop sharing', ariaLabel: `Stop sharing ${sh.name}`, onclick: () => setShare(sh.id, null) }, icon('x')))));
+  if (!a.shares.length) $('#shares').append(el('li', { className: 'none', textContent: 'Nothing shared yet.' }));
   $('#sessions').replaceChildren(...a.sessions.map((x) => el('li', {},
-    el('span', { className: 'txt' }, el('div', { className: 'name', textContent: x.client }), el('div', { className: 'user', textContent: `${x.cwd} · seit ${ago(x.since)}` })),
-    el('button', { type: 'button', className: 'btn soft', textContent: 'Trennen', onclick: async () => { await run(() => call({ type: 'kickAgent', i: x.i })); renderAgents(); } }))));
-  if (!a.sessions.length) $('#sessions').append(el('li', { className: 'none', textContent: 'Kein Agent verbunden.' }));
-  $('#mcpCmd').textContent = a.command || 'Node.js nicht gefunden – bitte installieren (z. B. brew install node), dann Vaultfill neu starten.';
+    el('span', { className: 'txt' }, el('div', { className: 'name', textContent: x.client }), el('div', { className: 'user', textContent: `${x.cwd} · since ${ago(x.since)}` })),
+    el('button', { type: 'button', className: 'btn soft', textContent: 'Disconnect', onclick: async () => { await run(() => call({ type: 'kickAgent', i: x.i })); renderAgents(); } }))));
+  if (!a.sessions.length) $('#sessions').append(el('li', { className: 'none', textContent: 'No agent connected.' }));
+  $('#mcpCmd').textContent = a.command || 'Node.js not found – please install it (e.g. brew install node), then restart Vaultfill.';
   $('#copyCmd').hidden = !a.command;
   $('#agentLog').replaceChildren(...a.log.map((l) => el('li', { className: 'log' }, `${ago(l.ts)} · `, el('b', { textContent: l.client }), ` · ${l.action}${l.name ? ` · ${l.name}` : ''}`)));
-  if (!a.log.length) $('#agentLog').append(el('li', { className: 'none', textContent: 'Noch keine Zugriffe.' }));
+  if (!a.log.length) $('#agentLog').append(el('li', { className: 'none', textContent: 'No access yet.' }));
 }
 
 async function setShare(id, level) {
@@ -172,14 +172,14 @@ async function setShare(id, level) {
 }
 
 $('#agentsBtn').addEventListener('click', () => { view = 'agents'; render(); });
-$('#copyCmd').addEventListener('click', async () => { await navigator.clipboard.writeText($('#mcpCmd').textContent); show('Befehl kopiert – im Terminal ausführen', 'info'); });
+$('#copyCmd').addEventListener('click', async () => { await navigator.clipboard.writeText($('#mcpCmd').textContent); show('Command copied – run it in a terminal', 'info'); });
 $('#shareQ').addEventListener('input', async () => {
   const q = $('#shareQ').value.trim();
   const res = q ? await run(() => call({ type: 'search', q, limit: 6 })) : { items: [] };
   $('#shareHits').replaceChildren(...(res?.items || []).map((it) => el('li', { tabIndex: 0, style: 'cursor:pointer', onclick: () => setShare(it.id, 'use'), onkeydown: (e) => e.key === 'Enter' && setShare(it.id, 'use') },
     avatar(it, st.server),
     el('span', { className: 'txt' }, el('div', { className: 'name', textContent: it.name }), el('div', { className: 'user', textContent: it.username || '—' })),
-    el('span', { className: 'badge', textContent: 'freigeben' }))));
+    el('span', { className: 'badge', textContent: 'share' }))));
 });
 
 // --- settings ------------------------------------------------------------------------------
@@ -189,12 +189,12 @@ $('#touchSwitch').addEventListener('change', async (e) => { await run(() => call
 $('#loginSwitch').addEventListener('change', async (e) => { await run(() => call({ type: 'setOpenAtLogin', on: e.target.checked })); render(); });
 
 // Shortcut recorder: click, press the combination; Esc cancels.
-const pretty = (a) => a.replace('CommandOrControl', '⌘').replace('Command', '⌘').replace('Control', '⌃').replace('Alt', '⌥').replace('Shift', '⇧').replace('Space', 'Leertaste').replaceAll('+', ' ');
+const pretty = (a) => a.replace('CommandOrControl', '⌘').replace('Command', '⌘').replace('Control', '⌃').replace('Alt', '⌥').replace('Shift', '⇧').replaceAll('+', ' ');
 let recording = false;
 $('#shortcut').addEventListener('click', () => {
   recording = true;
   $('#shortcut').classList.add('rec');
-  $('#shortcut').textContent = 'Tasten drücken …';
+  $('#shortcut').textContent = 'Press keys …';
 });
 document.addEventListener('keydown', async (e) => {
   if (!recording) return;
@@ -203,7 +203,7 @@ document.addEventListener('keydown', async (e) => {
   const key = e.code === 'Space' ? 'Space' : e.code.replace(/^Key|^Digit/, '');
   if (['Meta', 'Control', 'Alt', 'Shift'].some((m) => e.key === m)) return; // wait for the actual key
   const mods = [e.metaKey && 'Command', e.ctrlKey && 'Control', e.altKey && 'Alt', e.shiftKey && 'Shift'].filter(Boolean);
-  if (!mods.length) return show('Mindestens eine Sondertaste (⌘ ⌥ ⌃ ⇧) verwenden');
+  if (!mods.length) return show('Use at least one modifier key (⌘ ⌥ ⌃ ⇧)');
   recording = false;
   $('#shortcut').classList.remove('rec');
   await run(() => call({ type: 'setShortcut', accel: [...mods, key].join('+') }));
@@ -220,7 +220,7 @@ $('#touch').addEventListener('click', touchUnlock);
 $('#login').addEventListener('submit', async (e) => {
   e.preventDefault();
   const pending = run(() => call({ type: 'login', ...Object.fromEntries(new FormData(e.target)) }));
-  show('Anmelden … bei SSO im Anmeldefenster fortfahren', 'info'); // after run() cleared the message line
+  show('Signing in … with SSO, continue in the sign-in window', 'info'); // after run() cleared the message line
   if (await pending) render();
 });
 $('#totp').addEventListener('submit', async (e) => {

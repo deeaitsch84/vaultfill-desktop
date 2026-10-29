@@ -48,7 +48,7 @@ const waiting = new Map();
 function connect() {
   if (conn) return conn;
   conn = new Promise((resolve, reject) => {
-    if (!SOCKET) return reject(new Error('VAULTFILL_SOCKET ist nicht gesetzt'));
+    if (!SOCKET) return reject(new Error('VAULTFILL_SOCKET is not set'));
     const s = net.createConnection(SOCKET);
     s.on('connect', () => resolve(s));
     s.on('data', (d) => {
@@ -59,11 +59,11 @@ function connect() {
         waiting.delete(msg.id);
       }
     });
-    s.on('error', () => reject(new Error('Vaultfill läuft nicht (App starten und entsperren)')));
+    s.on('error', () => reject(new Error('Vaultfill is not running (start and unlock the app)')));
     s.on('close', () => {
       conn = null; // app locked or quit: the next call pairs again
       for (const p of running) killTree(p, 'SIGKILL'); // secrets must not outlive the session
-      for (const done of waiting.values()) done({ error: 'Verbindung zu Vaultfill getrennt' });
+      for (const done of waiting.values()) done({ error: 'Connection to Vaultfill closed' });
       waiting.clear();
     });
   }).then(async (s) => {
@@ -112,7 +112,7 @@ async function runWithSecrets({ command, env = {}, cwd, timeout_seconds: timeout
 async function callTool(name, args) {
   if (name === 'run_with_secrets') return runWithSecrets(args);
   const method = { list_shared_logins: 'list', reveal_secret: 'reveal' }[name];
-  if (!method) throw new Error(`Unbekanntes Tool ${name}`);
+  if (!method) throw new Error(`Unknown tool ${name}`);
   const result = await request(await connect(), method, args);
   return typeof result === 'string' ? result : JSON.stringify(result, null, 2);
 }
