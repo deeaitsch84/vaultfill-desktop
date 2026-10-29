@@ -4,179 +4,181 @@
 
 # Vaultfill Desktop
 
-**Dein Vaultwarden – eine Tastenkombination entfernt.**<br>
-Menüleisten-App für macOS mit Spotlight-artiger Schnellsuche, die Logins direkt in jede App tippt.
+**Your Vaultwarden – one shortcut away.**<br>
+A macOS menu-bar app with Spotlight-style quick search that types your logins straight into any app.
 
-![License: GPL-3.0](https://img.shields.io/badge/Lizenz-GPL--3.0-blue)
+![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue)
 ![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000?logo=apple&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-45-47848F?logo=electron&logoColor=white)
-![Vaultwarden](https://img.shields.io/badge/Vaultwarden-kompatibel-175DDC?logo=bitwarden&logoColor=white)
-![MCP](https://img.shields.io/badge/MCP-Agenten--Zugriff-8b5cf6)
+![Vaultwarden](https://img.shields.io/badge/Vaultwarden-compatible-175DDC?logo=bitwarden&logoColor=white)
+![MCP](https://img.shields.io/badge/MCP-agent%20access-8b5cf6)
 
-<img src="docs/screenshots/spot.png" width="680" alt="Schnellsuche">
+<img src="docs/screenshots/spot.png" width="680" alt="Quick search">
 
-<sub><b>⌘⇧Leertaste</b> → tippen → <b>⏎</b>. Benutzername ⇥ Passwort landen in der App, die gerade vorne war.</sub>
+<sub><b>⌘⇧Space</b> → type → <b>⏎</b>. Username ⇥ password land in the app that was in front.</sub>
 
 </div>
 
 ---
 
-## ✨ Was es kann
+## ✨ Features
 
 | | |
 |---|---|
-| 🔎 **Schnellsuche** | Systemweites Kürzel (frei belegbar), Suche über alle Logins, zuletzt benutzte zuerst. |
-| ⌨️ **In jede App tippen** | `⏎` tippt Benutzername ⇥ Passwort, `⇧⏎` nur das Passwort. |
-| 📋 **Kopieren** | `⌘C` Benutzer · `⌘⇧C` Passwort (nach 30 s aus der Zwischenablage gelöscht) · `⌘⌥C` 2FA-Code. |
-| ➕ **Neue Logins** | Direkt aus der Suche (`⌘N`) oder im Hauptfenster – mit Passwort-Generator. |
-| 🛡️ **Passwort-Check** | Geleakt (Have I Been Pwned, k-Anonymität), mehrfach verwendet, schwach. |
-| 🤖 **Agenten (MCP)** | Test-Zugangsdaten für KI-Agenten freigeben – ohne dass sie Passwörter zu sehen bekommen. |
-| 👆 **Touch ID** | Entsperren per Fingerabdruck; Auto-Sperre nach 30 min Leerlauf oder Bildschirmsperre. |
-| 🔐 **SSO & 2FA** | Vaultwarden mit SSO (z. B. Entra ID) im eigenen Anmeldefenster, TOTP- oder E-Mail-2FA. |
-| 🔄 **Live-Sync** | Änderungen aus Browser-Extension & Co. kommen in Sekunden an. |
+| 🔎 **Quick search** | System-wide shortcut (configurable), searches all logins, most recently used first. |
+| ⌨️ **Type into any app** | `⏎` types username ⇥ password, `⇧⏎` the password only. |
+| 📋 **Copy** | `⌘C` username · `⌘⇧C` password (cleared from the clipboard after 30 s) · `⌘⌥C` 2FA code. |
+| ➕ **New logins** | Straight from the search (`⌘N`) or in the main window – with a password generator. |
+| 🛡️ **Password check** | Breached (Have I Been Pwned, k-anonymity), reused, weak. |
+| 🤖 **Agents (MCP)** | Share test credentials with AI agents – without them ever seeing the passwords. |
+| 👆 **Touch ID** | Unlock with your fingerprint; auto-lock after 30 min idle, on screen lock or sleep. |
+| 🔐 **SSO & 2FA** | Vaultwarden with SSO (e.g. Entra ID) in its own sign-in window, TOTP or e-mail 2FA. |
+| 🔄 **Live sync** | Changes from the browser extension and other clients arrive within seconds. |
+
+> macOS only for now – see [#1](https://github.com/deeaitsch84/vaultfill-desktop/issues/1) for Windows. The user interface is currently in German.
 
 ## 📸 Screenshots
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="docs/screenshots/main.png" alt="Hauptfenster"><br><sub><b>Alle Logins</b></sub></td>
-    <td align="center" width="33%"><img src="docs/screenshots/new.png" alt="Neuer Login"><br><sub><b>Neuer Login</b> mit Generator</sub></td>
-    <td align="center" width="33%"><img src="docs/screenshots/health.png" alt="Sicherheit"><br><sub><b>Passwort-Check</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/main.png" alt="Main window"><br><sub><b>All logins</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/new.png" alt="New login"><br><sub><b>New login</b> with generator</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/health.png" alt="Security"><br><sub><b>Password check</b></sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/agents.png" alt="Agenten"><br><sub><b>Agenten-Freigaben</b> (MCP)</sub></td>
-    <td align="center"><img src="docs/screenshots/settings.png" alt="Einstellungen"><br><sub><b>Einstellungen</b></sub></td>
-    <td align="center" valign="middle"><img src="docs/screenshots/spot-locked.png" alt="Gesperrt"><br><sub><b>Gesperrt?</b> Touch ID startet sofort</sub></td>
+    <td align="center"><img src="docs/screenshots/agents.png" alt="Agents"><br><sub><b>Agent shares</b> (MCP)</sub></td>
+    <td align="center"><img src="docs/screenshots/settings.png" alt="Settings"><br><sub><b>Settings</b></sub></td>
+    <td align="center" valign="middle"><img src="docs/screenshots/spot-locked.png" alt="Locked"><br><sub><b>Locked?</b> Touch ID starts right away</sub></td>
   </tr>
 </table>
 
 ## 🚀 Installation
 
+**Download:** the signed and notarized app is attached to each [release](https://github.com/deeaitsch84/vaultfill-desktop/releases) – unzip, move `Vaultfill.app` to `/Applications`, start it, sign in. The icon lives in the menu bar.
+
+- **First autotype:** macOS asks for **Accessibility** (and once for "control System Events") for Vaultfill.
+- **Always available:** Settings → *Beim Anmelden starten* (start at login).
+
+### Build it yourself
+
 ```bash
 npm install
-npm run pack        # → dist/Vaultfill-darwin-arm64/Vaultfill.app
+npm start           # development
+npm run pack        # → dist/Vaultfill-darwin-arm64/Vaultfill.app (ad-hoc signed)
 ```
 
-`Vaultfill.app` nach `/Applications` ziehen, starten, anmelden. Das Icon sitzt in der Menüleiste.
-
-### Signiert & notarisiert (zum Weitergeben)
-
-Ohne Variablen wird ad-hoc signiert (lokale Nutzung). Mit einem **Developer ID Application**-Zertifikat:
+With a **Developer ID Application** certificate:
 
 ```bash
-# einmalig: Zugangsdaten für die Notarisierung im Schlüsselbund ablegen (App-spezifisches Passwort)
+# once: store notarization credentials in the keychain (app-specific password)
 xcrun notarytool store-credentials vaultfill-notary --apple-id <apple-id> --team-id <TEAMID>
 
 VF_SIGN_IDENTITY="Developer ID Application: <Name> (<TEAMID>)" VF_NOTARY_PROFILE=vaultfill-notary npm run pack
-# → dist/Vaultfill-darwin-arm64.zip (Hardened Runtime, notarisiert, Ticket geheftet)
+# → dist/Vaultfill-darwin-arm64.zip (hardened runtime, notarized, ticket stapled)
 ```
 
-Signiert wird *nach* dem Setzen der Electron-Fuses; Berechtigungen in `build/entitlements.plist` (JIT, Apple Events fürs Tippen).
+Signing happens *after* the Electron fuses are set; entitlements are in `build/entitlements.plist` (JIT, Apple Events for autotype).
 
-### Release per GitHub Actions
+### Releases via GitHub Actions
 
-Tag pushen → [`release.yml`](.github/workflows/release.yml) baut auf macOS, testet, signiert, notarisiert und hängt `Vaultfill-vX.Y.Z-macos-arm64.zip` + `SHA256SUMS.txt` an ein GitHub-Release:
+Push a tag → [`release.yml`](.github/workflows/release.yml) builds on macOS, runs the tests, signs, notarizes and attaches `Vaultfill-vX.Y.Z-macos-arm64.zip` + `SHA256SUMS.txt` to a GitHub release:
 
 ```bash
 git tag v0.2.0 && git push origin v0.2.0
 ```
 
-Benötigte Repository-Secrets stehen im Kopf der Workflow-Datei (Zertifikat als `.p12`, App-Store-Connect-API-Key für die Notarisierung).
+The required repository secrets are listed at the top of the workflow file (certificate as `.p12`, App Store Connect API key for notarization).
 
-- **Erstes Tippen:** macOS fragt nach **Bedienungshilfen** (und einmalig „System Events steuern“) für Vaultfill.
-- **Immer verfügbar:** Einstellungen → *Beim Anmelden starten*.
-- Entwicklung: `npm start`.
+## ⌨️ Shortcuts
 
-## ⌨️ Kürzel
-
-| Wo | Taste | Aktion |
+| Where | Key | Action |
 |---|---|---|
-| überall | `⌘⇧Leertaste` | Schnellsuche öffnen/schließen |
-| Schnellsuche | `⏎` · `⇧⏎` | Benutzername ⇥ Passwort tippen · nur Passwort |
-| Schnellsuche | `⌘C` · `⌘⇧C` · `⌘⌥C` | Benutzer · Passwort · 2FA-Code kopieren |
-| Schnellsuche | `⌘N` | Suchbegriff als neuen Login speichern |
-| App | `⌘,` | Einstellungen |
+| Anywhere | `⌘⇧Space` | Open/close the quick search |
+| Quick search | `⏎` · `⇧⏎` | Type username ⇥ password · password only |
+| Quick search | `⌘C` · `⌘⇧C` · `⌘⌥C` | Copy username · password · 2FA code |
+| Quick search | `⌘N` | Save the search term as a new login |
+| App | `⌘,` | Settings |
 
-## 🤖 Agenten-Zugriff per MCP
+## 🤖 Agent access via MCP
 
-Lass KI-Agenten (z. B. Claude Code) automatisierte Tests mit echten Test-Accounts fahren – **ohne dass Passwörter im Agenten-Kontext landen.**
+Let AI agents (e.g. Claude Code) run automated tests with real test accounts – **without passwords ending up in the agent's context.**
 
 ```mermaid
 sequenceDiagram
   participant A as Agent (Claude Code)
   participant M as mcp.cjs
   participant V as Vaultfill
-  participant U as Du
+  participant U as You
   A->>M: run_with_secrets("npx playwright test", TEST_PW = vaultfill://…/password)
-  M->>V: Unix-Socket (nur dein macOS-User)
-  V->>U: Erste Anfrage der Sitzung? Dialog + Touch ID
-  V->>U: Befehl anzeigen und bestätigen
-  U-->>V: Erlauben
+  M->>V: Unix socket (your macOS user only)
+  V->>U: First request of the session? Dialog + Touch ID
+  V->>U: Show the command, ask to confirm
+  U-->>V: Allow
   V-->>M: TEST_PW
-  M->>M: Befehl starten, Ausgabe schwärzen
-  M-->>A: Exit-Code + Ausgabe, Passwort → •••
+  M->>M: Run the command, redact the output
+  M-->>A: Exit code + output, password → •••
 ```
 
-1. **Einstellungen → Agenten (MCP) → Verwalten:** Einträge freigeben – *Für Befehle* oder *Für Befehle + Klartext*. Voraussetzung: Node.js (der MCP-Server läuft mit dem System-Node).
-2. Den angezeigten `claude mcp add vaultfill …`-Befehl kopieren und im Terminal ausführen.
+1. **Settings → Agenten (MCP) → Verwalten:** share entries – *for commands* or *for commands + plaintext*. Requires Node.js (the MCP server runs with the system Node).
+2. Copy the `claude mcp add vaultfill …` command shown there and run it in a terminal.
 
-| Tool | Liefert |
+| Tool | Returns |
 |---|---|
-| `list_shared_logins` | Name, Benutzername, URL, Referenzen (`vaultfill://<id>/password`) – **nie Passwörter** |
-| `run_with_secrets` | Führt einen Befehl mit Secrets als Umgebungsvariablen aus – erst nach deiner Bestätigung (Befehl wird angezeigt, optional für die Sitzung). Läuft mit den Rechten des Agenten, nicht mit Vaultfills. Ausgabe geschwärzt (roh, URL-kodiert, Base64) |
-| `reveal_secret` | Klartext – nur bei *Für Befehle + Klartext*, **jeder Abruf per Touch ID** bestätigt |
+| `list_shared_logins` | Name, username, URL, references (`vaultfill://<id>/password`) – **never passwords** |
+| `run_with_secrets` | Runs a command with secrets as environment variables – only after you confirm it (the command is shown; optionally for the whole session). Runs with the agent's permissions, not Vaultfill's. Output is redacted (raw, URL-encoded, base64) |
+| `reveal_secret` | Plaintext – only for *commands + plaintext* shares, **every call confirmed with Touch ID** |
 
-- Jede Agent-Sitzung braucht einmal deine Bestätigung; sie endet mit dem Agenten oder beim Sperren. Kein gespeichertes Token.
-- Protokoll aller Zugriffe und „Trennen“ in der App.
-- ⚠️ Grenze: Gibt ein Befehl ein Secret absichtlich verfremdet aus (rückwärts, zerstückelt), greift die Schwärzung nicht. Schutz vor Versehen, nicht vor einem bösartigen Agenten → **nur Test-Accounts freigeben.**
+- Every agent session needs your approval once; it ends with the agent or when Vaultfill locks. No stored token.
+- A log of all access and a "disconnect" button in the app.
+- ⚠️ Limit: if a command deliberately prints a secret in transformed form (reversed, split), redaction does not catch it. This protects against accidents, not against a malicious agent → **share test accounts only.**
 
-## 🛡️ Sicherheitsmodell
+## 🛡️ Security model
 
-- **Ende-zu-Ende wie Bitwarden:** PBKDF2 / Argon2id, AES-CBC + HMAC – alles lokal.
-- **Ruhender Zustand** (verschlüsselter Vault, Tokens, Einstellungen) zusätzlich per `safeStorage` versiegelt (Schlüssel im macOS-Schlüsselbund).
-- **Entschlüsselter Schlüssel nur im Speicher**; Auto-Sperre bei Leerlauf/Bildschirmsperre.
-- **Touch ID** gibt eine Schlüsselbund-geschützte Kopie des User-Keys frei (gleiches Modell wie Bitwarden Desktop).
-- **Tippen** über `osascript` per stdin – das Passwort erscheint nie in der Prozessliste.
-- **Leak-Check:** nur die ersten 5 Zeichen des SHA-1-Hashes verlassen den Mac.
-- **Gehärtetes Paket:** Electron-Fuses aus (`RunAsNode`, `NODE_OPTIONS`, `--inspect`), `app.asar`-Integritätsprüfung an, Bundle versiegelt – kein anderes Programm kann als Vaultfill Code ausführen und so an den Schlüsselbund-Schlüssel kommen.
-- **Agenten:** Befehle laufen im MCP-Prozess mit den Rechten des Agenten (nicht mit Vaultfills Bedienungshilfen-Recht), jeder Befehl mit Secrets wird angezeigt und bestätigt, Agent-Angaben im Dialog bereinigt, Kopplung mit Abklingzeit nach Ablehnung.
-- **Server:** http nur für lokale Server; zu schwache oder plötzlich abgeschwächte KDF-Einstellungen werden abgelehnt. URL-Abgleich nach der Public Suffix List.
+- **End-to-end like Bitwarden:** PBKDF2 / Argon2id, AES-CBC + HMAC – all local.
+- **Data at rest** (encrypted vault, tokens, settings) is additionally sealed with `safeStorage` (key in the macOS keychain).
+- **The decrypted key lives only in memory**; auto-lock on idle, screen lock and sleep.
+- **Touch ID** releases a keychain-protected copy of the user key (same model as Bitwarden Desktop).
+- **Autotype** goes through `osascript` via stdin – the password never shows up in the process list.
+- **Breach check:** only the first 5 characters of the SHA-1 hash leave the Mac.
+- **Hardened package:** Electron fuses off (`RunAsNode`, `NODE_OPTIONS`, `--inspect`), `app.asar` integrity validation on, bundle sealed – no other program can run code as Vaultfill to reach its keychain key.
+- **Agents:** commands run in the MCP process with the agent's permissions (not with Vaultfill's Accessibility permission), every command that receives secrets is shown and confirmed, agent-supplied text is sanitized in dialogs, pairing has a cooldown after a denial.
+- **Server:** plain http only for local servers; weak or suddenly weakened KDF settings are rejected. URL matching uses the Public Suffix List.
 
-### Bekannte Grenzen
+### Known limits
 
-- Ad-hoc-Signatur (Standard-Build): Nach jedem Neubau fragt macOS einmal nach dem Schlüsselbund-Zugriff („Immer erlauben“). Mit Developer ID entfällt das, und Gatekeeper akzeptiert die App auf anderen Macs.
-- Touch ID gibt eine Schlüsselbund-geschützte Kopie des Schlüssels frei; eine native, biometrie-gebundene Keychain-Ablage wäre noch strenger.
-- Ein freigegebenes Passwort kann ein Befehl, den du bestätigst, absichtlich verfremdet ausgeben – nur Test-Accounts freigeben.
+- Ad-hoc signature (default local build): after every rebuild macOS asks once for keychain access ("Always Allow"). With a Developer ID this goes away, and Gatekeeper accepts the app on other Macs.
+- Touch ID releases a keychain-protected copy of the key; a native, biometry-bound keychain item would be stricter.
+- A shared password can be printed in transformed form by a command you confirm – share test accounts only.
 
-## 🧩 Aufbau
+## 🧩 Architecture
 
-| Datei | Aufgabe |
+| File | Role |
 |---|---|
-| `main.js` | Main-Prozess: Zustand, Login/SSO, Entsperren, Sync, Schnellsuche, Tippen, Passwort-Check, Agenten-Socket |
-| `vault.js` | Bitwarden-Protokoll (identisch mit der Extension) |
-| `mcp.cjs` | MCP-Server (stdio) – dünner Proxy ohne eigene Secrets |
-| `preload.cjs` | Schmale Brücke `window.vf` für die Oberfläche |
-| `ui/` | Hauptfenster, Schnellsuche, Styles, Icons |
+| `main.js` | Main process: state, login/SSO, unlock, sync, quick search, autotype, password check, agent socket |
+| `vault.js` | Bitwarden protocol (identical to the extension's) |
+| `mcp.cjs` | MCP server (stdio) – thin proxy, runs confirmed commands |
+| `preload.cjs` | Narrow bridge `window.vf` for the UI |
+| `ui/` | Main window, quick search, styles, icons |
 
 ## 🧪 Tests
 
 ```bash
-npm test   # Unit: URI-Matching, PIN, TOTP (RFC 6238), Passwortstärke
+npm test   # unit: URI matching, Public Suffix List, KDF checks, PIN, TOTP (RFC 6238), password strength
 ```
 
-- **E2E** gegen ein echtes Vaultwarden, gegengeprüft mit der **offiziellen `bw` CLI** (Registrierung, Anlegen, Passwort-Update inkl. Historie) – siehe [`test/vault.test.mjs`](test/vault.test.mjs).
-- **App-Smoke-Test** fährt die echte App (Login, Anlegen, Suche, Sperren, Passwort-Check, MCP-Durchlauf) und erzeugt die Screenshots oben – siehe [`test/smoke.js`](test/smoke.js).
+- **End-to-end** against a real Vaultwarden, cross-checked with the **official `bw` CLI** (registration, creating entries, password update incl. history) – see [`test/vault.test.mjs`](test/vault.test.mjs).
+- **App smoke test** drives the real app (login, create, search, lock, password check, MCP flow incl. security cases) and produces the screenshots above – see [`test/smoke.js`](test/smoke.js).
 
 ## 🌐 Browser
 
-Inline-Autofill, Speichern nach dem Login und 2FA im Browser: **[vaultfill-extension](https://github.com/deeaitsch84/vaultfill-extension)**.
+Inline autofill, save after login and 2FA in the browser: **[vaultfill-extension](https://github.com/deeaitsch84/vaultfill-extension)**.
 
-## 📄 Lizenz
+## 📄 License
 
-[GPL-3.0](LICENSE) – frei nutzbar, veränderbar und weitergebbar; veröffentlichte Ableger müssen ihren Quellcode ebenfalls offenlegen.
-Mitgelieferte Drittkomponenten behalten ihre Lizenz: [hash-wasm](lib/hash-wasm.LICENSE) (MIT), [Public Suffix List](lib/psl.LICENSE) (MPL-2.0).
-Sicherheitslücken bitte privat melden – siehe [SECURITY.md](SECURITY.md).
+[GPL-3.0](LICENSE) – free to use, modify and share; published derivatives must make their source code available too.
+Bundled third-party components keep their licenses: [hash-wasm](lib/hash-wasm.LICENSE) (MIT), [Public Suffix List](lib/psl.LICENSE) (MPL-2.0).
+Please report security issues privately – see [SECURITY.md](SECURITY.md).
 
 ---
 
-<sub>Inoffizieller Client. Bitwarden ist eine Marke der Bitwarden Inc.; Vaultfill ist damit nicht verbunden.</sub>
+<sub>Unofficial client. Bitwarden is a trademark of Bitwarden Inc.; Vaultfill is not affiliated with it.</sub>
