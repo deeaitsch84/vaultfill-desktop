@@ -1,46 +1,140 @@
+<div align="center">
+
+<img src="icons/icon128.png" width="96" alt="Vaultfill">
+
 # Vaultfill Desktop
 
-Menüleisten-App für Vaultwarden mit systemweiter Schnellsuche (à la Spotlight / 1Password Quick Access).
+**Dein Vaultwarden – eine Tastenkombination entfernt.**<br>
+Menüleisten-App für macOS mit Spotlight-artiger Schnellsuche, die Logins direkt in jede App tippt.
 
-## Starten
+![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000?logo=apple&logoColor=white)
+![Electron](https://img.shields.io/badge/Electron-45-47848F?logo=electron&logoColor=white)
+![Vaultwarden](https://img.shields.io/badge/Vaultwarden-kompatibel-175DDC?logo=bitwarden&logoColor=white)
+![MCP](https://img.shields.io/badge/MCP-Agenten--Zugriff-8b5cf6)
+
+<img src="docs/screenshots/spot.png" width="680" alt="Schnellsuche">
+
+<sub><b>⌘⇧Leertaste</b> → tippen → <b>⏎</b>. Benutzername ⇥ Passwort landen in der App, die gerade vorne war.</sub>
+
+</div>
+
+---
+
+## ✨ Was es kann
+
+| | |
+|---|---|
+| 🔎 **Schnellsuche** | Systemweites Kürzel (frei belegbar), Suche über alle Logins, zuletzt benutzte zuerst. |
+| ⌨️ **In jede App tippen** | `⏎` tippt Benutzername ⇥ Passwort, `⇧⏎` nur das Passwort. |
+| 📋 **Kopieren** | `⌘C` Benutzer · `⌘⇧C` Passwort (nach 30 s aus der Zwischenablage gelöscht) · `⌘⌥C` 2FA-Code. |
+| ➕ **Neue Logins** | Direkt aus der Suche (`⌘N`) oder im Hauptfenster – mit Passwort-Generator. |
+| 🛡️ **Passwort-Check** | Geleakt (Have I Been Pwned, k-Anonymität), mehrfach verwendet, schwach. |
+| 🤖 **Agenten (MCP)** | Test-Zugangsdaten für KI-Agenten freigeben – ohne dass sie Passwörter zu sehen bekommen. |
+| 👆 **Touch ID** | Entsperren per Fingerabdruck; Auto-Sperre nach 30 min Leerlauf oder Bildschirmsperre. |
+| 🔐 **SSO & 2FA** | Vaultwarden mit SSO (z. B. Entra ID) im eigenen Anmeldefenster, TOTP- oder E-Mail-2FA. |
+| 🔄 **Live-Sync** | Änderungen aus Browser-Extension & Co. kommen in Sekunden an. |
+
+## 📸 Screenshots
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/main.png" alt="Hauptfenster"><br><sub><b>Alle Logins</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/new.png" alt="Neuer Login"><br><sub><b>Neuer Login</b> mit Generator</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/health.png" alt="Sicherheit"><br><sub><b>Passwort-Check</b></sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/agents.png" alt="Agenten"><br><sub><b>Agenten-Freigaben</b> (MCP)</sub></td>
+    <td align="center"><img src="docs/screenshots/settings.png" alt="Einstellungen"><br><sub><b>Einstellungen</b></sub></td>
+    <td align="center" valign="middle"><img src="docs/screenshots/spot-locked.png" alt="Gesperrt"><br><sub><b>Gesperrt?</b> Touch ID startet sofort</sub></td>
+  </tr>
+</table>
+
+## 🚀 Installation
 
 ```bash
 npm install
-npm start            # Entwicklung
-npm run pack         # → dist/Vaultfill-darwin-arm64/Vaultfill.app (nach /Applications ziehen)
+npm run pack        # → dist/Vaultfill-darwin-arm64/Vaultfill.app
 ```
 
-Beim ersten Start: Server, E-Mail, Master-Passwort (SSO läuft in einem eigenen Anmeldefenster).
+`Vaultfill.app` nach `/Applications` ziehen, starten, anmelden. Das Icon sitzt in der Menüleiste.
 
-## Bedienung
+- **Erstes Tippen:** macOS fragt nach **Bedienungshilfen** (und einmalig „System Events steuern“) für Vaultfill.
+- **Immer verfügbar:** Einstellungen → *Beim Anmelden starten*.
+- Entwicklung: `npm start`.
 
-- **⌘⇧Leertaste** (änderbar in den Einstellungen): Schnellsuche
-  - `⏎` Benutzername ⇥ Passwort in die vorherige App tippen, `⇧⏎` nur Passwort
-  - `⌘C` Benutzername, `⌘⇧C` Passwort, `⌘⌥C` 2FA-Code kopieren (Passwort wird nach 30 s aus der Zwischenablage gelöscht)
-  - `⌘N` bzw. letzte Zeile: Suchbegriff als neuen Login speichern
-  - gesperrt: Touch ID startet sofort, sonst Master-Passwort direkt eintippen
-- **Hauptfenster** (Menüleisten-Icon → „Vaultfill öffnen“): Liste, Suche, Neuer Login mit Passwort-Generator, Einstellungen (Kürzel, Touch ID, Autostart).
-- **Sicherheit** (Schild-Icon): geleakte (Have I Been Pwned, nur 5 Zeichen des SHA-1 verlassen den Mac), mehrfach verwendete und schwache Passwörter.
-- Tippen braucht einmalig **Bedienungshilfen** (+ beim ersten Mal „System Events steuern“) für Vaultfill.
+## ⌨️ Kürzel
 
-## Agenten (MCP)
+| Wo | Taste | Aktion |
+|---|---|---|
+| überall | `⌘⇧Leertaste` | Schnellsuche öffnen/schließen |
+| Schnellsuche | `⏎` · `⇧⏎` | Benutzername ⇥ Passwort tippen · nur Passwort |
+| Schnellsuche | `⌘C` · `⌘⇧C` · `⌘⌥C` | Benutzer · Passwort · 2FA-Code kopieren |
+| Schnellsuche | `⌘N` | Suchbegriff als neuen Login speichern |
+| App | `⌘,` | Einstellungen |
 
-Einstellungen → **Agenten (MCP)** → Einträge freigeben („Nur nutzen“ oder „Nutzen + Klartext“), den angezeigten `claude mcp add …`-Befehl kopieren und im Terminal ausführen.
+## 🤖 Agenten-Zugriff per MCP
 
-- `list_shared_logins` – nur Name, Benutzername, URL und Referenzen (`vaultfill://<id>/password`), nie Passwörter.
-- `run_with_secrets` – führt einen Befehl (`zsh -lc`) mit Secrets als Umgebungsvariablen aus, z. B. `{"command": "npx playwright test", "env": {"TEST_PW": "vaultfill://…/password"}}`. Ausgabe wird geschwärzt (roh, URL-kodiert, Base64).
-- `reveal_secret` – Klartext nur für Einträge mit „Nutzen + Klartext“, jedes Mal Touch ID.
-- Jede Agent-Sitzung muss einmal bestätigt werden (Dialog + Touch ID); sie endet mit dem Agenten oder beim Sperren. Kein gespeichertes Token. Socket nur für den eigenen macOS-Benutzer (0600). Protokoll und „Trennen“ in der App.
-- Grenze: Ein Befehl, der ein Secret absichtlich verfremdet ausgibt (rückwärts, zerstückelt), umgeht die Schwärzung. Schutz gegen Versehen, nicht gegen einen bösartigen Agenten → nur Test-Accounts freigeben.
+Lass KI-Agenten (z. B. Claude Code) automatisierte Tests mit echten Test-Accounts fahren – **ohne dass Passwörter im Agenten-Kontext landen.**
 
-## Sicherheit
+```mermaid
+sequenceDiagram
+  participant A as Agent (Claude Code)
+  participant M as mcp.cjs
+  participant V as Vaultfill
+  participant U as Du
+  A->>M: run_with_secrets("npx playwright test", TEST_PW = vaultfill://…/password)
+  M->>V: Unix-Socket (nur dein macOS-User)
+  V->>U: Erste Anfrage der Sitzung? Dialog + Touch ID
+  U-->>V: Erlauben
+  V->>V: Befehl mit TEST_PW starten
+  V-->>A: Exit-Code + Ausgabe, Passwort → •••
+```
 
-- Gespeicherter Zustand (verschlüsselter Vault, Tokens, Einstellungen) ist zusätzlich per `safeStorage` (Schlüssel im macOS-Schlüsselbund) versiegelt.
-- Entschlüsselter Schlüssel nur im Speicher; Auto-Sperre nach 30 min Leerlauf oder Bildschirmsperre.
-- Touch ID: Kopie des User-Keys im versiegelten Zustand, freigegeben nach Touch-ID-Bestätigung (gleiches Modell wie Bitwarden Desktop).
-- Getippt wird über `osascript` per stdin — das Passwort erscheint nicht in der Prozessliste.
+1. **Einstellungen → Agenten (MCP) → Verwalten:** Einträge freigeben – *Nur nutzen* oder *Nutzen + Klartext*.
+2. Den angezeigten `claude mcp add vaultfill …`-Befehl kopieren und im Terminal ausführen.
 
-## Tests
+| Tool | Liefert |
+|---|---|
+| `list_shared_logins` | Name, Benutzername, URL, Referenzen (`vaultfill://<id>/password`) – **nie Passwörter** |
+| `run_with_secrets` | Führt einen Befehl mit Secrets als Umgebungsvariablen aus; Ausgabe geschwärzt (roh, URL-kodiert, Base64) |
+| `reveal_secret` | Klartext – nur bei *Nutzen + Klartext*, **jeder Abruf per Touch ID** bestätigt |
 
-`npm test` (Unit). E2E gegen echtes Vaultwarden + offizielle `bw` CLI: Anleitung in `test/vault.test.mjs`.
-App-Smoke-Test mit Screenshots: Kopf von `test/smoke.js`.
+- Jede Agent-Sitzung braucht einmal deine Bestätigung; sie endet mit dem Agenten oder beim Sperren. Kein gespeichertes Token.
+- Protokoll aller Zugriffe und „Trennen“ in der App.
+- ⚠️ Grenze: Gibt ein Befehl ein Secret absichtlich verfremdet aus (rückwärts, zerstückelt), greift die Schwärzung nicht. Schutz vor Versehen, nicht vor einem bösartigen Agenten → **nur Test-Accounts freigeben.**
+
+## 🛡️ Sicherheitsmodell
+
+- **Ende-zu-Ende wie Bitwarden:** PBKDF2 / Argon2id, AES-CBC + HMAC – alles lokal.
+- **Ruhender Zustand** (verschlüsselter Vault, Tokens, Einstellungen) zusätzlich per `safeStorage` versiegelt (Schlüssel im macOS-Schlüsselbund).
+- **Entschlüsselter Schlüssel nur im Speicher**; Auto-Sperre bei Leerlauf/Bildschirmsperre.
+- **Touch ID** gibt eine Schlüsselbund-geschützte Kopie des User-Keys frei (gleiches Modell wie Bitwarden Desktop).
+- **Tippen** über `osascript` per stdin – das Passwort erscheint nie in der Prozessliste.
+- **Leak-Check:** nur die ersten 5 Zeichen des SHA-1-Hashes verlassen den Mac.
+
+## 🧩 Aufbau
+
+| Datei | Aufgabe |
+|---|---|
+| `main.js` | Main-Prozess: Zustand, Login/SSO, Entsperren, Sync, Schnellsuche, Tippen, Passwort-Check, Agenten-Socket |
+| `vault.js` | Bitwarden-Protokoll (identisch mit der Extension) |
+| `mcp.cjs` | MCP-Server (stdio) – dünner Proxy ohne eigene Secrets |
+| `preload.cjs` | Schmale Brücke `window.vf` für die Oberfläche |
+| `ui/` | Hauptfenster, Schnellsuche, Styles, Icons |
+
+## 🧪 Tests
+
+```bash
+npm test   # Unit: URI-Matching, PIN, TOTP (RFC 6238), Passwortstärke
+```
+
+- **E2E** gegen ein echtes Vaultwarden, gegengeprüft mit der **offiziellen `bw` CLI** (Registrierung, Anlegen, Passwort-Update inkl. Historie) – siehe [`test/vault.test.mjs`](test/vault.test.mjs).
+- **App-Smoke-Test** fährt die echte App (Login, Anlegen, Suche, Sperren, Passwort-Check, MCP-Durchlauf) und erzeugt die Screenshots oben – siehe [`test/smoke.js`](test/smoke.js).
+
+## 🌐 Browser
+
+Inline-Autofill, Speichern nach dem Login und 2FA im Browser: **[vaultfill-extension](https://github.com/deeaitsch84/vaultfill-extension)**.
+
+---
+
+<sub>Inoffizieller Client. Bitwarden ist eine Marke der Bitwarden Inc.; Vaultfill ist damit nicht verbunden.</sub>
