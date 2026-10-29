@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: http: data:; style-src 'self' 'unsafe-inline'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'">
 <title>Vaultfill</title>
 <link rel="stylesheet" href="style.css">
 <style>
@@ -154,7 +154,7 @@
     </section>
 
     <section id="agents" class="pane" hidden>
-      <p class="hint">Agenten sehen nur freigegebene Einträge – und Passwörter standardmäßig nie: sie bekommen sie nur als Umgebungsvariablen für Befehle, deren Ausgabe Vaultfill schwärzt. Jede Agent-Sitzung musst du einmal bestätigen.</p>
+      <p class="hint">Agenten sehen nur freigegebene Einträge und nie direkt Passwörter: Die bekommen nur Befehle, die du bestätigst (Ausgabe geschwärzt). Ein Befehl kann ein Passwort aber absichtlich verfremdet ausgeben – gib deshalb nur Test-Accounts frei. Jede Agent-Sitzung bestätigst du einmal per Touch ID.</p>
       <h3>Freigegeben</h3>
       <ul id="shares"></ul>
       <div class="field"><svg><use href="icons.svg#i-search"/></svg><input id="shareQ" placeholder="Eintrag freigeben …" aria-label="Eintrag zum Freigeben suchen"></div>

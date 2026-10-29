@@ -1,9 +1,15 @@
-// Vaultfill MCP server (stdio, JSON-RPC per line). A thin proxy: it holds no secrets and talks to the
-// running Vaultfill app over a Unix socket that only the current user can open. The app asks the user
-// (dialog + Touch ID) before the first call of each agent session.
-//   claude mcp add vaultfill -e ELECTRON_RUN_AS_NODE=1 -e VAULTFILL_SOCKET=<socket> -- <Vaultfill binary> <this file>
+// Vaultfill MCP server (stdio, JSON-RPC per line), run by the agent with the system Node:
+//   claude mcp add vaultfill -e VAULTFILL_SOCKET=<socket> -- <node> <this file>
+// Talks to the running Vaultfill app over a Unix socket that only the current user can open. The app asks the
+// user (dialog + Touch ID) before the first call of each agent session and confirms commands that get secrets.
+// Commands run here — with the agent's own macOS permissions, not Vaultfill's.
 const net = require('node:net');
 const readline = require('node:readline');
+const { spawn } = require('node:child_process');
+
+const MAX_OUTPUT = 50_000;
+const running = new Set(); // child processes (own process groups)
+const killTree = (p, sig) => { try { process.kill(-p.pid, sig); } catch {} };
 
 const SOCKET = process.env.VAULTFILL_SOCKET;
 const REF = 'vaultfill://<id>/<username|password|totp>';
@@ -17,7 +23,7 @@ const TOOLS = [
   {
     name: 'run_with_secrets',
     description: `Runs a shell command (zsh -lc) with shared secrets injected as environment variables, e.g. env {"TEST_PASSWORD": "${REF.replace('<username|password|totp>', 'password')}"}. `
-      + 'Use this for automated tests instead of reading secrets. The secrets never appear in the result: occurrences in the output are replaced by •••. Returns exit code and output (tail).',
+      + 'Use this for automated tests instead of reading secrets. The user confirms the command in Vaultfill. Secrets in the output are replaced by •••. Returns exit code and output (tail).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -56,6 +62,7 @@ function connect() {
     s.on('error', () => reject(new Error('Vaultfill läuft nicht (App starten und entsperren)')));
     s.on('close', () => {
       conn = null; // app locked or quit: the next call pairs again
+      for (const p of running) killTree(p, 'SIGKILL'); // secrets must not outlive the session
       for (const done of waiting.values()) done({ error: 'Verbindung zu Vaultfill getrennt' });
       waiting.clear();
     });
@@ -74,10 +81,39 @@ function request(s, method, params) {
   });
 }
 
+// Replaces every secret (and its URL/base64 encodings). Deliberately transformed output (reversed, split, …)
+// is not caught — this guards against accidents, not against a hostile agent.
+function redact(text, secrets) {
+  for (const s of secrets.filter((x) => x.length >= 3)) {
+    for (const variant of new Set([s, encodeURIComponent(s), Buffer.from(s).toString('base64')])) text = text.replaceAll(variant, '•••');
+  }
+  return text;
+}
+
+async function runWithSecrets({ command, env = {}, cwd, timeout_seconds: timeout = 600 }) {
+  const refs = {}, plain = {};
+  for (const [k, val] of Object.entries(env || {})) (String(val).startsWith('vaultfill://') ? refs : plain)[k] = String(val);
+  const { values } = await request(await connect(), 'resolve', { command, env: refs });
+  const secrets = Object.values(values);
+  return new Promise((resolve) => {
+    const p = spawn('/bin/zsh', ['-lc', command], { cwd: cwd || process.cwd(), env: { ...process.env, ...plain, ...values }, detached: true });
+    running.add(p);
+    let out = '';
+    const add = (d) => { out = (out + d).slice(-MAX_OUTPUT * 40); };
+    p.stdout.on('data', add);
+    p.stderr.on('data', add);
+    const timer = setTimeout(() => { killTree(p, 'SIGTERM'); setTimeout(() => killTree(p, 'SIGKILL'), 5000); }, Math.min(Math.max(+timeout || 600, 1), 3600) * 1000);
+    const done = (result) => { clearTimeout(timer); running.delete(p); killTree(p, 'SIGKILL'); resolve(JSON.stringify(result, null, 2)); };
+    p.on('error', (e) => done({ exit_code: -1, output: redact(e.message, secrets) }));
+    p.on('close', (code, signal) => done({ exit_code: code ?? -1, ...(signal ? { killed_by: signal } : {}), output: redact(out, secrets).slice(-MAX_OUTPUT) }));
+  });
+}
+
 async function callTool(name, args) {
-  const method = { list_shared_logins: 'list', run_with_secrets: 'run', reveal_secret: 'reveal' }[name];
+  if (name === 'run_with_secrets') return runWithSecrets(args);
+  const method = { list_shared_logins: 'list', reveal_secret: 'reveal' }[name];
   if (!method) throw new Error(`Unbekanntes Tool ${name}`);
-  const result = await request(await connect(), method, { cwd: process.cwd(), ...args });
+  const result = await request(await connect(), method, args);
   return typeof result === 'string' ? result : JSON.stringify(result, null, 2);
 }
 
@@ -109,4 +145,4 @@ readline.createInterface({ input: process.stdin }).on('line', async (line) => {
   try { msg = JSON.parse(line); } catch { return send({ id: null, error: { code: -32700, message: 'Parse error' } }); }
   if (msg.id === undefined) return; // notification
   try { send({ id: msg.id, result: await handle(msg) }); } catch (e) { send({ id: msg.id, error: { code: e.code || -32603, message: e.message } }); }
-}).on('close', () => process.exit(0));
+}).on('close', () => { for (const p of running) killTree(p, 'SIGKILL'); process.exit(0); });

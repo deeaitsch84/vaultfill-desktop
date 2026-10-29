@@ -5,7 +5,7 @@ import {
   app, BrowserWindow, globalShortcut, ipcMain, Tray, Menu, nativeImage, safeStorage,
   systemPreferences, powerMonitor, clipboard, shell, screen, dialog,
 } from 'electron';
-import { spawn } from 'node:child_process';
+import { spawn, execFile } from 'node:child_process';
 import { createServer as createSocketServer } from 'node:net';
 import { readFile, writeFile, unlink, chmod } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
@@ -91,6 +91,7 @@ async function finishLogin(p, grant, { totp, provider } = {}) {
   Object.assign(state, {
     server: p.server, email: p.email, kdf: p.kdf, accessToken: t.access_token, tokenExp: Date.now() + t.expires_in * 1000,
     refreshToken: t.refresh_token, twoFactorRemember: t.twoFactorToken || state.twoFactorRemember,
+    kdfPins: { ...state.kdfPins, [`${p.server}|${p.email}`]: p.kdf },
   });
   delete mem.pending;
   await sync();
@@ -104,6 +105,7 @@ async function login({ server, email, password, totp }) {
   server = await v.resolveServer(server);
   email = email.trim().toLowerCase();
   const kdf = await v.prelogin(server, email);
+  v.checkKdf(kdf, state.kdfPins?.[`${server}|${email}`]);
   const mk = await v.makeMasterKey(password, email, kdf);
   const p = { server, email, kdf, mk: v.b64(mk) };
   try {
@@ -219,12 +221,15 @@ async function totpOf(id) {
   return v.totp(await v.decryptStr(c.login.totp, await v.itemKey(c, mem)));
 }
 
-let clipTimer;
+let clipTimer, clipValue;
+const clearClipboard = () => { if (clipValue && clipboard.readText() === clipValue) clipboard.clear(); clipValue = null; };
+
 async function copy({ id, field }) {
   const value = field === 'totp' ? (await totpOf(id)).code : (await credentials(id))[field];
   clipboard.writeText(value);
   clearTimeout(clipTimer);
-  if (field === 'password') clipTimer = setTimeout(() => clipboard.readText() === value && clipboard.clear(), CLIPBOARD_CLEAR_MS);
+  clipValue = field === 'username' ? null : value;
+  if (clipValue) clipTimer = setTimeout(clearClipboard, CLIPBOARD_CLEAR_MS);
   return {};
 }
 
@@ -236,6 +241,8 @@ async function autotype({ id, passwordOnly }) {
     throw new Error('Bitte Vaultfill unter Systemeinstellungen → Datenschutz → Bedienungshilfen erlauben');
   }
   const cred = await credentials(id);
+  // Return/Tab inside a stored value would submit or jump fields in the target app
+  if (/[\0-\x1f\x7f]/.test(cred.username + cred.password)) throw new Error('Eintrag enthält Steuerzeichen – bitte kopieren statt tippen');
   hideSpot();
   app.hide(); // macOS re-activates the previous app
   await new Promise((r) => setTimeout(r, 250));
@@ -334,8 +341,8 @@ async function setShortcut({ accel }) {
 }
 
 async function logout() {
-  const { deviceId } = state;
-  state = { deviceId };
+  const { deviceId, kdfPins } = state;
+  state = { deviceId, kdfPins };
   mem = {};
   endAgentSessions();
   await save();
@@ -345,25 +352,46 @@ async function logout() {
 }
 
 // --- agent access (MCP) ---------------------------------------------------------------------
-// mcp.cjs connects over a user-only Unix socket. Each connection is one agent session that the user
-// approves once (dialog + Touch ID); it ends when the agent exits or the vault locks. Shares are opt-in
-// per entry: 'use' (secrets only via run_with_secrets, output redacted) or 'reveal' (plain text, Touch ID per call).
+// mcp.cjs (run by the agent with the system Node) connects over a user-only Unix socket. Each connection is one
+// agent session the user approves once (dialog + Touch ID); it ends when the agent exits or the vault locks.
+// Shares: 'use' = secrets only as env vars for commands the user confirms, 'reveal' = plain text, Touch ID per call.
+// Commands run inside mcp.cjs, i.e. with the agent's own macOS permissions, never with Vaultfill's (Accessibility).
+// A hostile agent can still print a 'use' secret through its own command: shares are meant for test accounts.
 
 const AGENT_SOCKET = () => join(app.getPath('userData'), 'agent.sock');
-const MAX_OUTPUT = 50_000;
-const sessions = new Map(); // socket → { client, cwd, since }
-const hooks = { approveAgent, confirmReveal }; // replaced by the smoke test
+const MCP_FILE = () => join(app.getPath('userData'), 'mcp.cjs');
+const MAX_LINE = 1 << 20, MAX_CONNECTIONS = 16, DENY_COOLDOWN_MS = 15e3;
+const sessions = new Map(); // socket → { client, cwd, since, trustRuns }
+const pairing = new Set();  // sockets with an approval dialog open
+let denyUntil = 0;
+const hooks = { approveAgent, confirmRun, confirmReveal }; // replaced by the smoke test
+
+// Agent-supplied text: drop control/format chars (newlines, RTL overrides) that could restyle the dialog.
+const clean = (s, max) => String(s ?? '').replace(/[\p{Cc}\p{Cf}]/gu, ' ').trim().slice(0, max) || '?';
 
 async function approveAgent({ client, cwd }) {
   app.focus({ steal: true });
   const { response } = await dialog.showMessageBox({
     type: 'question', buttons: ['Erlauben', 'Ablehnen'], defaultId: 1, cancelId: 1,
-    message: `Agent „${client}“ möchte auf freigegebene Logins zugreifen`,
-    detail: `Ordner: ${cwd}\n\nGilt, bis der Agent beendet oder Vaultfill gesperrt wird.`,
+    message: 'Ein Agent möchte auf freigegebene Logins zugreifen',
+    detail: `Angaben des Agenten (nicht überprüfbar):\nName: ${client}\nOrdner: ${cwd}\n\nNur erlauben, wenn du gerade selbst einen Agenten gestartet hast. Gilt, bis er beendet oder Vaultfill gesperrt wird.`,
   });
   if (response !== 0) return false;
   if (!systemPreferences.canPromptTouchID()) return true;
   try { await systemPreferences.promptTouchID(`Agent „${client}“ Zugriff erlauben`); return true; } catch { return false; }
+}
+
+async function confirmRun(session, command, names) {
+  app.focus({ steal: true });
+  const { response, checkboxChecked } = await dialog.showMessageBox({
+    type: 'warning', buttons: ['Ausführen', 'Ablehnen'], defaultId: 1, cancelId: 1,
+    message: `Agent „${session.client}“ möchte einen Befehl mit Zugangsdaten ausführen`,
+    detail: `Zugangsdaten: ${names}\n\nBefehl:\n${command.replace(/[\p{Cf}]|[\0-\x09\x0b-\x1f\x7f]/gu, ' ').slice(0, 1500)}\n\nDer Befehl bekommt die Passwörter im Klartext.`,
+    checkboxLabel: 'Für diese Agent-Sitzung nicht mehr fragen',
+  });
+  if (response !== 0) return false;
+  if (checkboxChecked) session.trustRuns = true;
+  return true;
 }
 
 async function confirmReveal(session, name) {
@@ -397,14 +425,7 @@ async function secretOf(ref, need) {
   return { e, field: m[2], value };
 }
 
-// Replaces every secret (and its URL/base64 encodings) in tool output. Deliberately transformed output
-// (reversed, split, …) is not caught — this guards against accidents, not against a hostile agent.
-function redact(text, secrets) {
-  for (const s of secrets.filter((x) => x.length >= 3)) {
-    for (const variant of new Set([s, encodeURIComponent(s), Buffer.from(s).toString('base64')])) text = text.replaceAll(variant, '•••');
-  }
-  return text;
-}
+const stillActive = (sock) => mem.index && sessions.has(sock) && !sock.destroyed;
 
 const agentMethods = {
   list: () => (mem.index || []).filter((e) => state.agentShares?.[e.id]).map((e) => ({
@@ -412,36 +433,26 @@ const agentMethods = {
     refs: { username: `vaultfill://${e.id}/username`, password: `vaultfill://${e.id}/password`, ...(e.totp ? { totp: `vaultfill://${e.id}/totp` } : {}) },
   })),
 
-  async run({ command, env = {}, cwd, timeout_seconds: timeout = 600 }, session) {
+  // Resolves secret refs for a command mcp.cjs is about to run; the user sees and confirms the command.
+  async resolve({ command, env = {} }, session, sock) {
     if (typeof command !== 'string' || !command.trim()) throw new Error('command fehlt');
-    const injected = {}, secrets = [], used = new Set();
+    const values = {}, used = new Set();
     for (const [k, ref] of Object.entries(env)) {
       if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(k)) throw new Error(`Ungültiger Variablenname ${k}`);
-      if (!String(ref).startsWith('vaultfill://')) { injected[k] = String(ref); continue; }
       const { e, value } = await secretOf(String(ref), 'use');
-      injected[k] = value;
-      secrets.push(value);
+      values[k] = value;
       used.add(e.name);
     }
+    if (used.size && !session.trustRuns && !(await hooks.confirmRun(session, command, [...used].join(', ')))) throw new Error('Vom Benutzer abgelehnt');
+    if (!stillActive(sock)) throw new Error('Sitzung beendet (Vaultfill gesperrt?)');
     agentLog(session, `Befehl: ${command.slice(0, 120)}`, [...used].join(', '));
-    return new Promise((resolve) => {
-      const p = spawn('/bin/zsh', ['-lc', command], { cwd: cwd || session.cwd, env: { ...process.env, ...injected } });
-      let out = '';
-      const add = (d) => { out = (out + d).slice(-MAX_OUTPUT * 2); };
-      p.stdout.on('data', add);
-      p.stderr.on('data', add);
-      const timer = setTimeout(() => p.kill('SIGTERM'), Math.min(Math.max(timeout, 1), 3600) * 1000);
-      p.on('error', (err) => { clearTimeout(timer); resolve({ exit_code: -1, output: redact(err.message, secrets) }); });
-      p.on('close', (code, signal) => {
-        clearTimeout(timer);
-        resolve({ exit_code: code ?? -1, ...(signal ? { killed_by: signal } : {}), output: redact(out, secrets).slice(-MAX_OUTPUT) });
-      });
-    });
+    return { values };
   },
 
-  async reveal({ ref }, session) {
+  async reveal({ ref }, session, sock) {
     const { e, field, value } = await secretOf(String(ref), 'reveal');
     if (field !== 'username' && !(await hooks.confirmReveal(session, e.name))) throw new Error('Vom Benutzer abgelehnt');
+    if (!stillActive(sock)) throw new Error('Sitzung beendet (Vaultfill gesperrt?)');
     agentLog(session, `Klartext: ${field}`, e.name);
     return value;
   },
@@ -456,53 +467,66 @@ async function onAgentMessage(sock, line) {
     let session = sessions.get(sock);
     if (msg.method === 'hello') {
       if (!session) {
-        const p = msg.params || {};
-        const info = { client: String(p.client || 'agent').slice(0, 80), cwd: String(p.cwd || '?').slice(0, 300) };
-        if (!(await hooks.approveAgent(info))) throw new Error('Zugriff vom Benutzer abgelehnt');
-        session = { ...info, since: Date.now() };
-        sessions.set(sock, session);
-        agentLog(session, 'verbunden');
+        if (pairing.has(sock)) throw new Error('Kopplung läuft bereits');
+        if (Date.now() < denyUntil) throw new Error('Kurz zuvor abgelehnt – bitte später erneut versuchen');
+        pairing.add(sock);
+        try {
+          const info = { client: clean(msg.params?.client, 60), cwd: clean(msg.params?.cwd, 200) };
+          if (!(await hooks.approveAgent(info))) { denyUntil = Date.now() + DENY_COOLDOWN_MS; throw new Error('Zugriff vom Benutzer abgelehnt'); }
+          if (!mem.index || sock.destroyed) throw new Error('Vaultfill wurde inzwischen gesperrt'); // lock while the dialog was open
+          session = { ...info, since: Date.now() };
+          sessions.set(sock, session);
+          agentLog(session, 'verbunden');
+        } finally { pairing.delete(sock); }
       }
       return reply({ result: {} });
     }
     if (!session) throw new Error('Nicht gekoppelt');
-    if (!agentMethods[msg.method]) throw new Error(`Unbekannte Methode ${msg.method}`);
-    reply({ result: await agentMethods[msg.method](msg.params || {}, session) });
+    if (!Object.hasOwn(agentMethods, msg.method)) throw new Error('Unbekannte Methode');
+    reply({ result: await agentMethods[msg.method](msg.params || {}, session, sock) });
   } catch (e) {
     reply({ error: e.message });
   }
 }
 
 async function startAgentServer() {
+  // the agent runs mcp.cjs with the system Node, which cannot read app.asar: hand it a copy
+  await writeFile(MCP_FILE(), await readFile(join(dir, 'mcp.cjs')), { mode: 0o600 });
   await unlink(AGENT_SOCKET()).catch(() => {});
   const srv = createSocketServer((sock) => {
     let buf = '';
     sock.setEncoding('utf8');
     sock.on('data', (d) => {
       buf += d;
+      if (buf.length > MAX_LINE) return sock.destroy();
       for (let i; (i = buf.indexOf('\n')) >= 0; buf = buf.slice(i + 1)) onAgentMessage(sock, buf.slice(0, i));
     });
     sock.on('close', () => { if (sessions.delete(sock)) broadcast(); });
     sock.on('error', () => {});
   });
+  srv.maxConnections = MAX_CONNECTIONS;
   await new Promise((r) => srv.listen(AGENT_SOCKET(), r));
   await chmod(AGENT_SOCKET(), 0o600); // only this macOS user may connect
 }
 
 function endAgentSessions() {
-  for (const sock of sessions.keys()) sock.destroy();
+  for (const sock of [...sessions.keys(), ...pairing]) sock.destroy();
   sessions.clear();
+  pairing.clear();
 }
 
-function agentState() {
+let nodePath;
+const findNode = async () => (nodePath ??= await new Promise((r) => execFile('/bin/zsh', ['-lc', 'command -v node'], (e, out) => r(e ? '' : out.trim()))));
+
+async function agentState() {
   const byId = new Map((mem.index || []).map((e) => [e.id, e]));
-  const mcp = join(dir, 'mcp.cjs');
+  const node = await findNode();
   return {
     shares: Object.entries(state.agentShares || {}).filter(([id]) => byId.has(id))
       .map(([id, level]) => ({ id, level, name: byId.get(id).name, username: byId.get(id).username })),
-    sessions: [...sessions.entries()].map(([sock, s], i) => ({ i, client: s.client, cwd: s.cwd, since: s.since })),
+    sessions: [...sessions.values()].map((s, i) => ({ i, client: s.client, cwd: s.cwd, since: s.since })),
     log: (state.agentLog || []).slice(0, 30),
-    command: `claude mcp add vaultfill -e ELECTRON_RUN_AS_NODE=1 -e VAULTFILL_SOCKET='${AGENT_SOCKET()}' -- '${process.execPath}' '${mcp}'`,
+    command: node ? `claude mcp add vaultfill -e VAULTFILL_SOCKET='${AGENT_SOCKET()}' -- '${node}' '${MCP_FILE()}'` : null,
   };
 }
 
@@ -524,6 +548,12 @@ function kickAgent({ i }) {
 
 const webPreferences = { preload: join(dir, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false };
 
+// Our windows only ever show the bundled UI: no navigation (e.g. a dropped link) and no new windows.
+function lockDown(win) {
+  win.webContents.on('will-navigate', (e) => e.preventDefault());
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+}
+
 // view: optional { view: 'new', name } — opens the main window on that screen
 function showMain(view) {
   if (!mainWin || mainWin.isDestroyed()) {
@@ -531,6 +561,7 @@ function showMain(view) {
       width: 400, height: 600, minWidth: 360, minHeight: 420, show: false, title: 'Vaultfill',
       titleBarStyle: 'hiddenInset', vibrancy: 'sidebar', backgroundColor: '#00000000', webPreferences,
     });
+    lockDown(mainWin);
     mainWin.loadFile(join(dir, 'ui/app.html'), { query: view ? { view: view.view, name: view.name || '' } : {} });
     mainWin.once('ready-to-show', () => mainWin.show());
   } else {
@@ -547,6 +578,7 @@ function createSpot() {
   });
   spotWin.setAlwaysOnTop(true, 'floating');
   spotWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  lockDown(spotWin);
   spotWin.loadFile(join(dir, 'ui/spotlight.html'));
   spotWin.on('blur', hideSpot);
 }
@@ -590,7 +622,7 @@ ipcMain.handle('vf', async (e, msg) => {
 
 // --- app ------------------------------------------------------------------------------------
 
-if (!app.requestSingleInstanceLock()) app.quit();
+if (!app.requestSingleInstanceLock()) app.exit(0); // exit, not quit: a second instance must not reach whenReady (agent socket)
 app.on('second-instance', () => showMain());
 app.on('window-all-closed', () => {}); // keep running in the menu bar
 app.on('activate', () => showMain());
@@ -618,6 +650,8 @@ app.whenReady().then(async () => {
   tray.on('right-click', () => tray.popUpContextMenu(menu()));
 
   powerMonitor.on('lock-screen', lock);
+  powerMonitor.on('suspend', lock);
+  app.on('before-quit', clearClipboard);
   setInterval(() => { if (mem.index && powerMonitor.getSystemIdleTime() >= IDLE_LOCK_SECONDS) lock(); }, 60e3);
   setInterval(() => { if (state.refreshToken) sync().catch((e) => console.warn('sync', e)); }, 30 * 60e3);
   connectHub();

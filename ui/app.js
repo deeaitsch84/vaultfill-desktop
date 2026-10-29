@@ -146,8 +146,8 @@ async function renderAgents() {
   $('#agentSub').textContent = a.shares.length ? `${a.shares.length} freigegeben · ${a.sessions.length} aktiv` : 'Test-Zugangsdaten für KI-Agenten freigeben';
   if ($('#agents').hidden) return;
   const level = (sh) => el('select', { ariaLabel: `Freigabe für ${sh.name}`, onchange: (e) => setShare(sh.id, e.target.value) },
-    el('option', { value: 'use', textContent: 'Nur nutzen', selected: sh.level === 'use' }),
-    el('option', { value: 'reveal', textContent: 'Nutzen + Klartext', selected: sh.level === 'reveal' }));
+    el('option', { value: 'use', textContent: 'Für Befehle', selected: sh.level === 'use' }),
+    el('option', { value: 'reveal', textContent: 'Für Befehle + Klartext', selected: sh.level === 'reveal' }));
   $('#shares').replaceChildren(...a.shares.map((sh) => el('li', {},
     avatar(sh, null),
     el('span', { className: 'txt' }, el('div', { className: 'name', textContent: sh.name }), el('div', { className: 'user', textContent: sh.username || '—' })),
@@ -158,7 +158,8 @@ async function renderAgents() {
     el('span', { className: 'txt' }, el('div', { className: 'name', textContent: x.client }), el('div', { className: 'user', textContent: `${x.cwd} · seit ${ago(x.since)}` })),
     el('button', { type: 'button', className: 'btn soft', textContent: 'Trennen', onclick: async () => { await run(() => call({ type: 'kickAgent', i: x.i })); renderAgents(); } }))));
   if (!a.sessions.length) $('#sessions').append(el('li', { className: 'none', textContent: 'Kein Agent verbunden.' }));
-  $('#mcpCmd').textContent = a.command;
+  $('#mcpCmd').textContent = a.command || 'Node.js nicht gefunden – bitte installieren (z. B. brew install node), dann Vaultfill neu starten.';
+  $('#copyCmd').hidden = !a.command;
   $('#agentLog').replaceChildren(...a.log.map((l) => el('li', { className: 'log' }, `${ago(l.ts)} · `, el('b', { textContent: l.client }), ` · ${l.action}${l.name ? ` · ${l.name}` : ''}`)));
   if (!a.log.length) $('#agentLog').append(el('li', { className: 'none', textContent: 'Noch keine Zugriffe.' }));
 }
