@@ -7,7 +7,7 @@ const { flipFuses, FuseVersion, FuseV1Options } = require('@electron/fuses');
 const { sign } = require('@electron/osx-sign');
 const { notarize } = require('@electron/notarize');
 const { execFileSync } = require('node:child_process');
-const { join } = require('node:path');
+const { join, dirname } = require('node:path');
 
 const app = process.argv[2] || 'dist/Vaultfill-darwin-arm64/Vaultfill.app';
 const identity = process.env.VF_SIGN_IDENTITY;
@@ -34,7 +34,7 @@ const notaryAuth = profile ? { keychainProfile: profile }
   console.log('signed with', identity);
   if (!notaryAuth) return;
   await notarize({ appPath: app, ...notaryAuth }); // also staples the ticket
-  const zip = `${app.replace(/\.app$/, '')}.zip`;
+  const zip = `${dirname(app)}.zip`; // dist/Vaultfill-darwin-arm64.zip
   execFileSync('ditto', ['-c', '-k', '--keepParent', app, zip]);
   console.log('notarized →', zip);
 })().catch((e) => { console.error(e); process.exit(1); });
