@@ -7,6 +7,7 @@
 **Dein Vaultwarden – eine Tastenkombination entfernt.**<br>
 Menüleisten-App für macOS mit Spotlight-artiger Schnellsuche, die Logins direkt in jede App tippt.
 
+![License: GPL-3.0](https://img.shields.io/badge/Lizenz-GPL--3.0-blue)
 ![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000?logo=apple&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-45-47848F?logo=electron&logoColor=white)
 ![Vaultwarden](https://img.shields.io/badge/Vaultwarden-kompatibel-175DDC?logo=bitwarden&logoColor=white)
@@ -169,6 +170,12 @@ npm test   # Unit: URI-Matching, PIN, TOTP (RFC 6238), Passwortstärke
 ## 🌐 Browser
 
 Inline-Autofill, Speichern nach dem Login und 2FA im Browser: **[vaultfill-extension](https://github.com/deeaitsch84/vaultfill-extension)**.
+
+## 📄 Lizenz
+
+[GPL-3.0](LICENSE) – frei nutzbar, veränderbar und weitergebbar; veröffentlichte Ableger müssen ihren Quellcode ebenfalls offenlegen.
+Mitgelieferte Drittkomponenten behalten ihre Lizenz: [hash-wasm](lib/hash-wasm.LICENSE) (MIT), [Public Suffix List](lib/psl.LICENSE) (MPL-2.0).
+Sicherheitslücken bitte privat melden – siehe [SECURITY.md](SECURITY.md).
 
 ---
 
