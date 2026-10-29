@@ -7,9 +7,10 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test test/*.mjs",
-    "pack": "electron-packager . Vaultfill --platform=darwin --arch=arm64 --icon=icons/icon.icns --out=dist --overwrite --ignore=^/test --ignore=^/dist"
+    "pack": "electron-packager . Vaultfill --platform=darwin --arch=arm64 --icon=icons/icon.icns --out=dist --overwrite --ignore=^/test --ignore=^/dist --ignore=^/docs --ignore=^/scripts && node scripts/harden.cjs"
   },
   "devDependencies": {
+    "@electron/fuses": "2.1.3",
     "@electron/packager": "20.3.0",
     "electron": "45.1.0"
   }
